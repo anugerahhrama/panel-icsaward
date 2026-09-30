@@ -22,9 +22,9 @@ class DatabaseSeeder extends Seeder
             AssessmentTemplateSeeder::class,
         ]);
 
-        if (! User::query()->where('email', 'admin@app.com')->exists()) {
+        if (! User::query()->where('email', 'superadmin@app.com')->exists()) {
             User::factory()->create([
-                'name' => 'Admin',
+                'name' => 'Superadmin',
                 'email' => 'admin@app.com',
                 'password' => Hash::make('123123123'),
                 'role' => 'superadmin',
