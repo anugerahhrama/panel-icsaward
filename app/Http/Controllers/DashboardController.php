@@ -1,0 +1,121 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Enums\SubmissionStatus;
+use App\Enums\UserRole;
+use App\Models\Setting;
+use App\Models\Submission;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class DashboardController extends Controller
+{
+    /**
+     * Competition stages shown in the participant "What's next" panel; dates are display text from settings.
+     *
+     * @var array<string, array{title: string, description: string}>
+     */
+    private const array TIMELINE = [
+        'timeline_administrative_selection' => [
+            'title' => 'Administrative selection',
+            'description' => 'The committee checks your documents for completeness. Your status becomes Qualified or Needs Revision.',
+        ],
+        'timeline_desk_evaluation' => [
+            'title' => 'Desk evaluation',
+            'description' => 'Qualified submissions are scored by the Board of Judges in your category.',
+        ],
+        'timeline_finalists_announcement' => [
+            'title' => 'Top 5 finalists announced',
+            'description' => 'We will contact finalists by email and on this dashboard.',
+        ],
+        'timeline_pitching' => [
+            'title' => 'Pitching session',
+            'description' => 'Finalists present their initiative to the judges.',
+        ],
+        'timeline_awarding_night' => [
+            'title' => 'Awarding Night',
+            'description' => 'Winners are announced at the Awarding Night.',
+        ],
+    ];
+
+    /**
+     * Show the participant dashboard, or send staff to their own area.
+     */
+    public function __invoke(Request $request): Response|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (in_array($user->role, [UserRole::Superadmin, UserRole::Admin], true)) {
+            return to_route('admin.dashboard');
+        }
+
+        if ($user->role === UserRole::Judge) {
+            return to_route('judge.dashboard');
+        }
+
+        $deadline = Setting::endOfDay('paper_deadline');
+        $defaultPaperTemplateUrl = Setting::publicFileUrl('submission_template_path');
+
+        return Inertia::render('dashboard', [
+            'submissions' => $user->submissions()
+                ->with(['awardCategory.pitchingSession', 'pitchingSlot'])
+                ->orderBy('id')
+                ->get()
+                ->map(fn (Submission $submission): array => [
+                    'uuid' => $submission->uuid,
+                    'initiativeTitle' => $submission->initiative_title,
+                    'category' => $submission->awardCategory->name,
+                    'paperTemplateUrl' => $submission->awardCategory->paper_template_url ?? $defaultPaperTemplateUrl,
+                    'status' => $submission->status->value,
+                    'revisionNote' => $submission->revision_note,
+                    'revisionDeadline' => $submission->revision_deadline?->toIso8601String(),
+                    'isRevisionOpen' => $submission->isRevisionOpen(),
+                    'disqualifiedReason' => $submission->disqualified_reason,
+                    'paperUploadedAt' => $submission->paper_uploaded_at?->toIso8601String(),
+                    'paperOriginalName' => $submission->paper_original_name,
+                    'paperUrl' => $submission->paper_path === null
+                        ? null
+                        : route('submissions.files.show', [$submission, 'paper']),
+                    'statementOriginalName' => $submission->statement_original_name,
+                    'statementUrl' => $submission->statement_path === null
+                        ? null
+                        : route('submissions.files.show', [$submission, 'statement']),
+                    'pitching' => $this->pitching($submission),
+                ]),
+            'paperDeadline' => $deadline?->toIso8601String(),
+            'isClosed' => $deadline !== null && now()->greaterThan($deadline),
+            'statementLetterTemplateUrl' => Setting::publicFileUrl('statement_letter_template_path'),
+            'contactEmail' => Setting::get('contact_email'),
+            'timeline' => collect(self::TIMELINE)
+                ->map(fn (array $stage, string $key): array => [
+                    ...$stage,
+                    'date' => Setting::get($key) ?: null,
+                ])
+                ->values(),
+        ]);
+    }
+
+    /**
+     * The finalist's pitching schedule, once the committee has set up their category's session.
+     *
+     * @return array{scheduledAt: string, startsAt: string|null, location: string|null, meetingLink: string|null}|null
+     */
+    private function pitching(Submission $submission): ?array
+    {
+        $session = $submission->awardCategory->pitchingSession;
+
+        if ($submission->status !== SubmissionStatus::Finalist || ! $submission->awardCategory->isFinalistsConfirmed() || $session === null) {
+            return null;
+        }
+
+        return [
+            'scheduledAt' => $session->scheduled_at->toIso8601String(),
+            'startsAt' => $submission->pitchingSlot?->starts_at->toIso8601String(),
+            'location' => $session->location,
+            'meetingLink' => $session->meeting_link,
+        ];
+    }
+}
