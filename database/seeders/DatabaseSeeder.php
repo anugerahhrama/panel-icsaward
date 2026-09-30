@@ -22,15 +22,17 @@ class DatabaseSeeder extends Seeder
             AssessmentTemplateSeeder::class,
         ]);
 
-        if (! User::query()->where('email', 'superadmin@app.com')->exists()) {
-            User::factory()->create([
+        $superadmin = User::query()->firstOrNew(['email' => 'superadmin@app.com']);
+
+        if (! $superadmin->exists) {
+            $superadmin->forceFill([
                 'name' => 'Superadmin',
-                'email' => 'admin@app.com',
                 'password' => Hash::make('123123123'),
                 'role' => 'superadmin',
                 'position' => 'Superadmin',
                 'phone' => '081234567890',
-            ]);
+                'email_verified_at' => now(),
+            ])->save();
         }
     }
 }
