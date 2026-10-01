@@ -29,11 +29,11 @@ function formatDate(value: string, withYear: boolean): string | null {
 }
 
 function RegistrationPeriod() {
-    const { opensAt, closesAt } = usePage().props.registrationPeriod;
+    const { opensAt, closesAt, isOpen } = usePage().props.registrationPeriod;
     const opens = opensAt ? formatDate(opensAt, false) : null;
     const closes = closesAt ? formatDate(closesAt, true) : null;
 
-    if (!opens || !closes) {
+    if (!isOpen || !opens || !closes) {
         return null;
     }
 

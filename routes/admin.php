@@ -1,30 +1,33 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminAccountController;
+use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\AssessmentTemplateController;
 use App\Http\Controllers\Admin\AwardController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FinalistController;
 use App\Http\Controllers\Admin\JudgeController;
 use App\Http\Controllers\Admin\Participants\PaperSubmissionController;
 use App\Http\Controllers\Admin\Participants\RegistrationController;
-use App\Http\Controllers\Admin\Participants\SubmissionFilePreviewController;
 use App\Http\Controllers\Admin\Participants\VerificationController;
 use App\Http\Controllers\Admin\PitchingController;
 use App\Http\Controllers\Admin\ScoreRecapController;
+use App\Http\Controllers\Admin\Settings\EmailPreviewController;
 use App\Http\Controllers\Admin\Settings\EmailSettingsController;
 use App\Http\Controllers\Admin\Settings\FileSettingsController;
 use App\Http\Controllers\Admin\Settings\JudgingSettingsController;
 use App\Http\Controllers\Admin\Settings\LandingApiSettingsController;
 use App\Http\Controllers\Admin\Settings\RegistrationSettingsController;
 use App\Http\Controllers\SubmissionFileController;
+use App\Http\Controllers\SubmissionFilePreviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'role:superadmin,admin'])
     ->prefix(config('admin.prefix'))
     ->name('admin.')
     ->group(function () {
-        Route::inertia('dashboard', 'admin/dashboard')->name('dashboard');
+        Route::get('dashboard', DashboardController::class)->name('dashboard');
 
         Route::prefix('categories')->group(function () {
             Route::resource('templates', AssessmentTemplateController::class)
@@ -91,6 +94,11 @@ Route::middleware(['auth', 'verified', 'role:superadmin,admin'])
             });
         });
 
+        Route::prefix('announcements')->name('announcements.')->controller(AnnouncementController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('{category}/{announcement}', 'store')->name('store');
+        });
+
         Route::middleware('role:superadmin')->group(function () {
             Route::resource('accounts', AdminAccountController::class)
                 ->only(['index', 'store', 'update', 'destroy'])
@@ -112,6 +120,7 @@ Route::middleware(['auth', 'verified', 'role:superadmin,admin'])
 
             Route::get('email', [EmailSettingsController::class, 'edit'])->name('email.edit');
             Route::put('email', [EmailSettingsController::class, 'update'])->name('email.update');
+            Route::post('email/preview', EmailPreviewController::class)->name('email.preview');
 
             Route::middleware('role:superadmin')->controller(LandingApiSettingsController::class)->group(function () {
                 Route::get('landing-api', 'edit')->name('landing-api.edit');

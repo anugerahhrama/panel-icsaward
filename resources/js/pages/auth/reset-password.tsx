@@ -1,10 +1,10 @@
 import { Form, Head } from '@inertiajs/react';
-import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { toastFormErrors } from '@/lib/form-errors';
 import { update } from '@/routes/password';
 
 type Props = {
@@ -22,6 +22,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                 {...update.form()}
                 transform={(data) => ({ ...data, token, email })}
                 resetOnSuccess={['password', 'password_confirmation']}
+                onError={(errors) => toastFormErrors(errors)}
             >
                 {({ processing, errors }) => (
                     <div className="grid gap-6">
@@ -35,10 +36,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                                 value={email}
                                 className="mt-1 block w-full"
                                 readOnly
-                            />
-                            <InputError
-                                message={errors.email}
-                                className="mt-2"
+                                aria-invalid={Boolean(errors.email)}
                             />
                         </div>
 
@@ -52,8 +50,8 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                                 autoFocus
                                 placeholder="Password"
                                 passwordrules={passwordRules}
+                                aria-invalid={Boolean(errors.password)}
                             />
-                            <InputError message={errors.password} />
                         </div>
 
                         <div className="grid gap-2">
@@ -67,10 +65,9 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                                 className="mt-1 block w-full"
                                 placeholder="Confirm password"
                                 passwordrules={passwordRules}
-                            />
-                            <InputError
-                                message={errors.password_confirmation}
-                                className="mt-2"
+                                aria-invalid={Boolean(
+                                    errors.password_confirmation,
+                                )}
                             />
                         </div>
 

@@ -20,3 +20,11 @@ Dua submission untuk user yang sama di kategori yang sama gagal `UNIQUE constrai
 ## Menguji sesi user yang sudah dihapus: `withSession`, bukan `actingAs`
 
 `actingAs($user)` memasang objek user langsung ke guard, jadi user provider tidak pernah dipanggil dan user soft-deleted tetap "login". Untuk membuktikan sesi lama putus, isi session guard lalu request: `$this->withSession([Auth::guard('web')->getName() => $user->id])->get(...)->assertRedirect(route('login'))`. Untuk menguji login ulang setelah `actingAs`, panggil `Auth::logout()` dulu (middleware `guest` me-redirect user yang masih login). Reference: `tests/Feature/Admin/AdminAccountsTest.php`. (Kelola akun admin, 2026-09-30.)
+
+## Menguji seeder dalam mode produksi: panggil langsung, bukan `$this->seed()`
+
+`db:seed` meminta konfirmasi di produksi, jadi `$this->seed()` tidak bisa dipakai. Set `$this->app['env'] = 'production'` lalu `app(DatabaseSeeder::class)->setContainer(app())->__invoke()` (`$this->command` null, jadi cabang yang memanggil `$this->command` jangan dicapai lewat jalur ini). Untuk menguji password lemah, pakai password di bawah panjang minimum supaya `uncompromised()` (HIBP) tidak memanggil jaringan. Reference: `tests/Feature/Seeders/DatabaseSeederTest.php`. (Persiapan produksi, 2026-10-01.)
+
+## Test search: set semua kolom yang dicari pada data pembanding
+
+Scope search admin memakai `LIKE %q%` di beberapa kolom (judul, nama, email, company). Data pembanding dari faker bisa kebetulan memuat kata kunci (mis. "Katrina" cocok `rina`) dan membuat test flaky. Di test search, set eksplisit semua kolom yang dicari pada record pembanding dan target. Pest `--repeat` tidak berlaku di sini; buktikan stabil dengan loop shell `vendor/bin/pest --filter=...`. Reference: `tests/Feature/Admin/ParticipantsTest.php`. (Test flaky ParticipantsTest, 2026-10-01.)

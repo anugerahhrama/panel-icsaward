@@ -17,8 +17,10 @@ class SubmissionConfirmation extends Mailable implements ShouldQueue
 
     /**
      * Create a new message instance.
+     *
+     * @param  array{subject: string, body: string, contact_email: string}|null  $template  Unsaved template from Settings → Email Templates, used by the preview instead of the stored one.
      */
-    public function __construct(public Submission $submission)
+    public function __construct(public Submission $submission, public ?array $template = null)
     {
         $this->afterCommit();
     }
@@ -29,7 +31,7 @@ class SubmissionConfirmation extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: strtr(Setting::get('confirmation_email_subject', 'ICS Award 2026: Your registration is confirmed'), $this->placeholders()),
+            subject: strtr($this->template['subject'] ?? Setting::get('confirmation_email_subject', 'ICS Award 2026: Your registration is confirmed'), $this->placeholders()),
         );
     }
 
@@ -40,7 +42,7 @@ class SubmissionConfirmation extends Mailable implements ShouldQueue
     {
         $link = route('submissions.show', $this->submission);
 
-        $body = strtr(Setting::get('confirmation_email_body', "Dear {{name}},\n\n{{submission_link}}"), [
+        $body = strtr($this->template['body'] ?? Setting::get('confirmation_email_body', "Dear {{name}},\n\n{{submission_link}}"), [
             ...array_map(e(...), $this->placeholders()),
             '{{submission_link}}' => "[{$link}]({$link})",
         ]);
@@ -66,7 +68,7 @@ class SubmissionConfirmation extends Mailable implements ShouldQueue
             '{{initiative_title}}' => $this->submission->initiative_title,
             '{{submission_link}}' => route('submissions.show', $this->submission),
             '{{deadline}}' => $deadline === null ? 'the announced deadline' : $deadline->format('j F Y, H:i').' WIB',
-            '{{contact_email}}' => Setting::get('contact_email', ''),
+            '{{contact_email}}' => $this->template['contact_email'] ?? Setting::get('contact_email', ''),
         ];
     }
 }

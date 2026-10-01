@@ -1,5 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
 import EmailSettingsController from '@/actions/App/Http/Controllers/Admin/Settings/EmailSettingsController';
+import { EmailPreviewDialog } from '@/components/admin/email-preview-dialog';
 import { SaveButton } from '@/components/admin/save-button';
 import { SettingsSection } from '@/components/admin/settings-section';
 import Heading from '@/components/heading';
@@ -14,7 +15,10 @@ type TemplateKey =
     | 'confirmation'
     | 'qualified'
     | 'needs_revision'
-    | 'disqualified';
+    | 'disqualified'
+    | 'finalist_announcement'
+    | 'awarding_invitation'
+    | 'winner_announcement';
 
 type Props = {
     settings: Record<
@@ -109,6 +113,53 @@ const templates: {
             contactPlaceholder,
         ],
     },
+    {
+        key: 'finalist_announcement',
+        title: 'Announcement: finalists',
+        description:
+            'Sent to each finalist when the committee announces the finalists of their category (Admin → Announcements). The body is Markdown.',
+        placeholders: [
+            ...commonPlaceholders,
+            {
+                token: '{{pitching_schedule}}',
+                description:
+                    'Pitching date, time (WIB) and place, or "to be announced on your dashboard"',
+            },
+            dashboardPlaceholder,
+            contactPlaceholder,
+        ],
+    },
+    {
+        key: 'awarding_invitation',
+        title: 'Announcement: Awarding Night invitation',
+        description:
+            'Sent to each finalist when the committee sends the Awarding Night invitations of their category. Does not reveal the award. The body is Markdown.',
+        placeholders: [
+            ...commonPlaceholders,
+            {
+                token: '{{awarding_night}}',
+                description:
+                    'Awarding Night date & venue from Settings → Registration & Deadlines',
+            },
+            dashboardPlaceholder,
+            contactPlaceholder,
+        ],
+    },
+    {
+        key: 'winner_announcement',
+        title: 'Announcement: winners',
+        description:
+            'Sent to each award recipient when the committee announces the winners of their category. The subject and body may use {{award}}. The body is Markdown.',
+        placeholders: [
+            ...commonPlaceholders,
+            {
+                token: '{{award}}',
+                description: 'Award received (Gold, Silver or Bronze)',
+            },
+            dashboardPlaceholder,
+            contactPlaceholder,
+        ],
+    },
 ];
 
 export default function EmailSettings({ settings }: Props) {
@@ -167,6 +218,11 @@ export default function EmailSettings({ settings }: Props) {
                                         />
                                         <InputError message={errors[body]} />
                                     </div>
+
+                                    <EmailPreviewDialog
+                                        template={template.key}
+                                        title={template.title}
+                                    />
 
                                     <div className="grid gap-2">
                                         <p className="text-sm font-medium">

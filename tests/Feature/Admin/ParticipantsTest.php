@@ -38,10 +38,41 @@ test('admins see every registration with its participant and category', function
             ->has('statuses', count(SubmissionStatus::cases())));
 });
 
+test('superadmins receive the participant details and the personal submission link', function () {
+    $submission = Submission::factory()->create([
+        'initiative_description' => 'Restoring river banks with local communities.',
+        'user_id' => User::factory()->unverified(),
+    ]);
+
+    $this->actingAs(User::factory()->superadmin()->create())
+        ->get(route('admin.participants.registrations.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('submissions.data.0.uuid', $submission->uuid)
+            ->where('submissions.data.0.initiative_description', 'Restoring river banks with local communities.')
+            ->where('submissions.data.0.applicant_type', $submission->awardCategory->applicant_type->value)
+            ->where('submissions.data.0.email_verified', false)
+            ->where('submissions.data.0.submission_url', route('submissions.show', $submission)));
+});
+
+test('admins never receive the personal submission link', function () {
+    Submission::factory()->create();
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.participants.registrations.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('submissions.data.0.submission_url', null));
+});
+
 test('registrations can be searched by title, name or email', function (string $search) {
-    $user = User::factory()->create(['name' => 'Rina Kusuma', 'email' => 'rina@example.com']);
+    $user = User::factory()->create(['name' => 'Rina Kusuma', 'email' => 'rina@example.com', 'company_name' => 'Yayasan Biru']);
     Submission::factory()->for($user)->create(['initiative_title' => 'Clean Rivers']);
-    Submission::factory()->count(2)->create();
+
+    foreach ([['Budi Santoso', 'budi@example.com', 'Solar Schools'], ['Dewi Lestari', 'dewi@example.com', 'Mangrove Watch']] as [$name, $email, $title]) {
+        Submission::factory()
+            ->for(User::factory()->create(['name' => $name, 'email' => $email, 'company_name' => 'Yayasan Hijau']))
+            ->create(['initiative_title' => $title]);
+    }
 
     $this->actingAs(User::factory()->admin()->create())
         ->get(route('admin.participants.registrations.index', ['search' => $search]))

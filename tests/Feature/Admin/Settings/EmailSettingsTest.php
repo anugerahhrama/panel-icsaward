@@ -24,6 +24,12 @@ test('admins can update the email templates and contact email', function () {
             'needs_revision_email_body' => '{{revision_note}} by {{revision_deadline}}',
             'disqualified_email_subject' => 'Disqualified',
             'disqualified_email_body' => '{{disqualified_reason}}',
+            'finalist_announcement_email_subject' => 'Finalist',
+            'finalist_announcement_email_body' => '{{pitching_schedule}}',
+            'awarding_invitation_email_subject' => 'Invitation',
+            'awarding_invitation_email_body' => '{{awarding_night}}',
+            'winner_announcement_email_subject' => 'Your {{award}} award',
+            'winner_announcement_email_body' => 'Congratulations on {{award}}',
             'contact_email' => 'committee@example.com',
         ])
         ->assertRedirect(route('admin.settings.email.edit'))
@@ -32,6 +38,7 @@ test('admins can update the email templates and contact email', function () {
     expect(Setting::get('confirmation_email_subject'))->toBe('Welcome {{name}}')
         ->and(Setting::get('confirmation_email_body'))->toBe("Dear {{name}},\n\n{{submission_link}}")
         ->and(Setting::get('needs_revision_email_body'))->toBe('{{revision_note}} by {{revision_deadline}}')
+        ->and(Setting::get('winner_announcement_email_subject'))->toBe('Your {{award}} award')
         ->and(Setting::get('contact_email'))->toBe('committee@example.com');
 });
 

@@ -28,3 +28,7 @@ Template di-`updateOrCreate` by `name`, kriteria by (`assessment_template_id`, `
 ## Rename kategori: di tempat lewat `AwardCategorySeeder::RENAMED`
 
 Jangan hapus baris lama, karena submission, penugasan juri, template paper, dan `assessment_template_id` menempel ke id-nya. Tambahkan pasangan `old => new` ke `RENAMED`. Seeder mengganti nama baris lama (bila baris bernama baru belum ada) sebelum menjalankan `updateOrCreate` by `name`. (Sinkronisasi deck, 2026-09-30.)
+
+## Superadmin hanya dari `config('admin.superadmin')`, jangan hardcode kredensial
+
+`DatabaseSeeder::seedSuperadmin()` membaca `SUPERADMIN_NAME`/`SUPERADMIN_EMAIL`/`SUPERADMIN_PASSWORD` lewat `config/admin.php`. Kosong → produksi `RuntimeException`, lokal/testing skip + warn. Akun dengan email itu yang sudah ada tidak disentuh (password yang diganti tidak di-reset). Akun baru divalidasi `Password::defaults()` (kuat di produksi). Seeder tidak boleh membuat data dummy/factory. (Persiapan produksi, 2026-10-01.)

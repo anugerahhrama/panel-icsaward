@@ -3,7 +3,7 @@ import { useState } from 'react';
 import {
     FilePreviewDialog,
     type SubmittedFile,
-} from '@/components/admin/participants/file-preview-dialog';
+} from '@/components/submissions/file-preview';
 import {
     ParticipantsTable,
     type ParticipantTableProps,

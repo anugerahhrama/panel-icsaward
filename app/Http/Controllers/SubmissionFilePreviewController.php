@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Participants;
+namespace App\Http\Controllers;
 
 use App\Actions\Submissions\SubmitPaper;
 use App\Enums\FilePreviewKind;
-use App\Http\Controllers\Controller;
 use App\Models\Submission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
@@ -19,7 +18,7 @@ class SubmissionFilePreviewController extends Controller
     public const int SHARED_LINK_MINUTES = 10;
 
     /**
-     * Preview a submitted file in the admin panel: PDFs and images inline, Office files through Office Online.
+     * Preview a submitted file for admins and assigned judges: PDFs and images inline, Office files through Office Online.
      *
      * Office Online fetches the file itself, so it gets a fresh short-lived signed URL on every preview.
      * The signature is relative so it stays valid behind an HTTPS-terminating proxy.

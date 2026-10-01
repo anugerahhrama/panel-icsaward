@@ -33,11 +33,16 @@ import { useAppTable } from '@/hooks/table';
 import { dashboard } from '@/routes/admin';
 import { destroy, index, restore } from '@/routes/admin/accounts';
 import type { Auth } from '@/types';
-import { createColumns, type AccountRow } from './columns';
+import {
+    createColumns,
+    type AccountRow,
+    type RevealedPassword,
+} from './columns';
 
 type Props = {
     accounts: AccountRow[];
     deletedAccounts: AccountRow[];
+    revealedPassword?: RevealedPassword | null;
 };
 
 type View = 'active' | 'deleted';
@@ -137,7 +142,11 @@ function AccountsTable({
     );
 }
 
-export default function AccountsIndex({ accounts, deletedAccounts }: Props) {
+export default function AccountsIndex({
+    accounts,
+    deletedAccounts,
+    revealedPassword,
+}: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const [view, setView] = useState<View>('active');
     const [sheetOpen, setSheetOpen] = useState(false);
@@ -247,6 +256,13 @@ export default function AccountsIndex({ accounts, deletedAccounts }: Props) {
                             key={accountToEdit?.id ?? 'new'}
                             account={accountToEdit ?? undefined}
                             isSelf={accountToEdit?.id === auth.user.id}
+                            accountPassword={
+                                accountToEdit &&
+                                revealedPassword?.account_id ===
+                                    accountToEdit.id
+                                    ? revealedPassword.password
+                                    : undefined
+                            }
                             onSaved={() => setSheetOpen(false)}
                         />
                     </div>

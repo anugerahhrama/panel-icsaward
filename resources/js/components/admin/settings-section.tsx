@@ -42,7 +42,11 @@ export function SettingsSection({
                         />
                     </CardHeader>
                 </CollapsibleTrigger>
-                <CollapsibleContent>
+                {/* Stay mounted while collapsed so uncontrolled <Form> fields are still submitted. */}
+                <CollapsibleContent
+                    forceMount
+                    className="data-[state=closed]:hidden"
+                >
                     <CardContent className="space-y-4 pt-4">
                         {children}
                     </CardContent>

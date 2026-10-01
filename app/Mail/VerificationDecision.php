@@ -40,8 +40,10 @@ class VerificationDecision extends Mailable
 
     /**
      * Create a new message instance.
+     *
+     * @param  array{subject: string, body: string, contact_email: string}|null  $template  Unsaved template from Settings → Email Templates, used by the preview instead of the stored one.
      */
-    public function __construct(public Submission $submission) {}
+    public function __construct(public Submission $submission, public ?array $template = null) {}
 
     /**
      * Get the message envelope.
@@ -49,7 +51,7 @@ class VerificationDecision extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: strtr(Setting::get("{$this->templateKey()}_email_subject", $this->fallback('subject')), $this->placeholders()),
+            subject: strtr($this->templatePart('subject'), $this->placeholders()),
         );
     }
 
@@ -60,7 +62,7 @@ class VerificationDecision extends Mailable
     {
         $link = route('dashboard');
 
-        $body = strtr(Setting::get("{$this->templateKey()}_email_body", $this->fallback('body')), [
+        $body = strtr($this->templatePart('body'), [
             ...array_map(e(...), $this->placeholders()),
             '{{dashboard_link}}' => "[{$link}]({$link})",
         ]);
@@ -81,6 +83,14 @@ class VerificationDecision extends Mailable
             SubmissionStatus::Disqualified => 'disqualified',
             default => 'qualified',
         };
+    }
+
+    /**
+     * The unsaved template part when previewing, otherwise the stored one with its fallback.
+     */
+    private function templatePart(string $part): string
+    {
+        return $this->template[$part] ?? Setting::get("{$this->templateKey()}_email_{$part}", $this->fallback($part));
     }
 
     private function fallback(string $part): string
@@ -105,7 +115,7 @@ class VerificationDecision extends Mailable
             '{{revision_note}}' => $this->submission->revision_note ?? '',
             '{{revision_deadline}}' => $deadline === null ? '' : $deadline->format('j F Y, H:i').' WIB',
             '{{disqualified_reason}}' => $this->submission->disqualified_reason ?? '',
-            '{{contact_email}}' => Setting::get('contact_email', ''),
+            '{{contact_email}}' => $this->template['contact_email'] ?? Setting::get('contact_email', ''),
         ];
     }
 }

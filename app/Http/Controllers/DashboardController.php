@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Announcement;
 use App\Enums\SubmissionStatus;
 use App\Enums\UserRole;
 use App\Models\Setting;
@@ -58,6 +59,7 @@ class DashboardController extends Controller
 
         $deadline = Setting::endOfDay('paper_deadline');
         $defaultPaperTemplateUrl = Setting::publicFileUrl('submission_template_path');
+        $awardingNight = Setting::get('timeline_awarding_night') ?: null;
 
         return Inertia::render('dashboard', [
             'submissions' => $user->submissions()
@@ -69,7 +71,7 @@ class DashboardController extends Controller
                     'initiativeTitle' => $submission->initiative_title,
                     'category' => $submission->awardCategory->name,
                     'paperTemplateUrl' => $submission->awardCategory->paper_template_url ?? $defaultPaperTemplateUrl,
-                    'status' => $submission->status->value,
+                    'status' => $submission->statusForParticipant()->value,
                     'revisionNote' => $submission->revision_note,
                     'revisionDeadline' => $submission->revision_deadline?->toIso8601String(),
                     'isRevisionOpen' => $submission->isRevisionOpen(),
@@ -84,6 +86,14 @@ class DashboardController extends Controller
                         ? null
                         : route('submissions.files.show', [$submission, 'statement']),
                     'pitching' => $this->pitching($submission),
+                    'notSelected' => $submission->status === SubmissionStatus::Qualified
+                        && $submission->awardCategory->isAnnounced(Announcement::Finalists),
+                    'awardingNight' => $this->isAnnouncedFinalist($submission, Announcement::Invitations)
+                        ? ['details' => $awardingNight]
+                        : null,
+                    'award' => $this->isAnnouncedFinalist($submission, Announcement::Winners)
+                        ? $submission->award?->value
+                        : null,
                 ]),
             'paperDeadline' => $deadline?->toIso8601String(),
             'isClosed' => $deadline !== null && now()->greaterThan($deadline),
@@ -99,7 +109,15 @@ class DashboardController extends Controller
     }
 
     /**
-     * The finalist's pitching schedule, once the committee has set up their category's session.
+     * Whether the submission is a finalist and the committee has made this announcement for its category.
+     */
+    private function isAnnouncedFinalist(Submission $submission, Announcement $announcement): bool
+    {
+        return $submission->status === SubmissionStatus::Finalist && $submission->awardCategory->isAnnounced($announcement);
+    }
+
+    /**
+     * The finalist's pitching schedule, once the finalists are announced and the committee has set up the session.
      *
      * @return array{scheduledAt: string, startsAt: string|null, location: string|null, meetingLink: string|null}|null
      */
@@ -107,7 +125,7 @@ class DashboardController extends Controller
     {
         $session = $submission->awardCategory->pitchingSession;
 
-        if ($submission->status !== SubmissionStatus::Finalist || ! $submission->awardCategory->isFinalistsConfirmed() || $session === null) {
+        if (! $this->isAnnouncedFinalist($submission, Announcement::Finalists) || $session === null) {
             return null;
         }
 

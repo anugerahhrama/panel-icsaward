@@ -1,9 +1,9 @@
 import { Form, Head } from '@inertiajs/react';
-import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { toastFormErrors } from '@/lib/form-errors';
 import { store } from '@/routes/password/confirm';
 
 export default function ConfirmPassword() {
@@ -11,7 +11,11 @@ export default function ConfirmPassword() {
         <>
             <Head title="Confirm password" />
 
-            <Form {...store.form()} resetOnSuccess={['password']}>
+            <Form
+                {...store.form()}
+                resetOnSuccess={['password']}
+                onError={(errors) => toastFormErrors(errors)}
+            >
                 {({ processing, errors }) => (
                     <div className="space-y-6">
                         <div className="grid gap-2">
@@ -22,9 +26,8 @@ export default function ConfirmPassword() {
                                 placeholder="Password"
                                 autoComplete="current-password"
                                 autoFocus
+                                aria-invalid={Boolean(errors.password)}
                             />
-
-                            <InputError message={errors.password} />
                         </div>
 
                         <div className="flex items-center">

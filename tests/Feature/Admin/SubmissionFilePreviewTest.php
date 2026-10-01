@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\FilePreviewKind;
-use App\Http\Controllers\Admin\Participants\SubmissionFilePreviewController;
+use App\Http\Controllers\SubmissionFilePreviewController;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;

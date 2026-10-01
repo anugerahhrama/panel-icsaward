@@ -3,7 +3,8 @@ import { toast } from 'sonner';
 import {
     FilePreviewButton,
     type SubmittedFile,
-} from '@/components/admin/participants/file-preview-dialog';
+} from '@/components/submissions/file-preview';
+import { Detail } from '@/components/admin/participants/detail';
 import { SubmissionStatusBadge } from '@/components/admin/participants/submission-status-badge';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -165,15 +166,6 @@ function VerificationForm({
                 </Button>
             </div>
         </form>
-    );
-}
-
-function Detail({ label, value }: { label: string; value: React.ReactNode }) {
-    return (
-        <div className="grid gap-1">
-            <dt className="text-sm text-muted-foreground">{label}</dt>
-            <dd className="text-sm whitespace-pre-line">{value}</dd>
-        </div>
     );
 }
 

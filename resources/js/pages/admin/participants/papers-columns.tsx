@@ -1,7 +1,7 @@
 import {
     FilePreviewButton,
     type SubmittedFile,
-} from '@/components/admin/participants/file-preview-dialog';
+} from '@/components/submissions/file-preview';
 import { SubmissionStatusBadge } from '@/components/admin/participants/submission-status-badge';
 import type { SubmissionStatus } from '@/components/submissions/submission-status-card';
 import { Button } from '@/components/ui/button';

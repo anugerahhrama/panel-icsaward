@@ -24,6 +24,12 @@ class EmailSettingsController extends Controller
         'needs_revision_email_body',
         'disqualified_email_subject',
         'disqualified_email_body',
+        'finalist_announcement_email_subject',
+        'finalist_announcement_email_body',
+        'awarding_invitation_email_subject',
+        'awarding_invitation_email_body',
+        'winner_announcement_email_subject',
+        'winner_announcement_email_body',
         'contact_email',
     ];
 

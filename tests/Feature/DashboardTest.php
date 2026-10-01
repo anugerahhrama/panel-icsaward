@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Award;
 use App\Enums\SubmissionStatus;
 use App\Models\AwardCategory;
 use App\Models\PitchingSession;
@@ -104,7 +105,7 @@ test('each submission offers the paper template of its category or the default o
 
 test('finalists see their pitching schedule once the session is set up', function () {
     $user = User::factory()->create();
-    $category = AwardCategory::factory()->finalistsConfirmed()->create();
+    $category = AwardCategory::factory()->finalistsAnnounced()->create();
     $scheduled = Submission::factory()->finalist()->for($user)->for($category, 'awardCategory')->create();
     $unscheduled = Submission::factory()->finalist()->for($category, 'awardCategory')->create();
     $session = PitchingSession::factory()->for($category, 'awardCategory')->create([
@@ -131,9 +132,9 @@ test('finalists see their pitching schedule once the session is set up', functio
             ->where('submissions.0.pitching.startsAt', null));
 });
 
-test('the pitching schedule is hidden from submissions that are not confirmed finalists', function () {
+test('the pitching schedule is hidden from submissions that are not announced finalists', function () {
     $user = User::factory()->create();
-    $category = AwardCategory::factory()->finalistsConfirmed()->create();
+    $category = AwardCategory::factory()->finalistsAnnounced()->create();
     Submission::factory()->qualified()->for($user)->for($category, 'awardCategory')->create();
     Submission::factory()->finalist()->for($user)->create();
     PitchingSession::factory()->for($category, 'awardCategory')->create();
@@ -143,4 +144,56 @@ test('the pitching schedule is hidden from submissions that are not confirmed fi
         ->assertInertia(fn (Assert $page) => $page
             ->where('submissions.0.pitching', null)
             ->where('submissions.1.pitching', null));
+});
+
+test('finalists stay qualified for participants until the finalists are announced', function () {
+    $submission = Submission::factory()->finalist()->for(AwardCategory::factory()->finalistsConfirmed(), 'awardCategory')->create();
+    PitchingSession::factory()->for($submission->awardCategory, 'awardCategory')->create();
+
+    $this->actingAs($submission->user)
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('submissions.0.status', 'qualified')
+            ->where('submissions.0.notSelected', false)
+            ->where('submissions.0.pitching', null));
+
+    $this->get(route('submissions.show', $submission))
+        ->assertInertia(fn (Assert $page) => $page->where('submission.status', 'qualified'));
+});
+
+test('once the finalists are announced, the other qualified submissions are not selected', function () {
+    $category = AwardCategory::factory()->finalistsAnnounced()->create();
+    $finalist = Submission::factory()->finalist()->for($category, 'awardCategory')->create();
+    $notSelected = Submission::factory()->qualified()->for($category, 'awardCategory')->create();
+
+    $this->actingAs($finalist->user)
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('submissions.0.status', 'finalist')
+            ->where('submissions.0.awardingNight', null)
+            ->where('submissions.0.award', null));
+
+    $this->actingAs($notSelected->user)
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('submissions.0.status', 'qualified')
+            ->where('submissions.0.notSelected', true));
+});
+
+test('finalists see the Awarding Night invitation, and their award only once the winners are announced', function () {
+    Setting::put('timeline_awarding_night', '20 November 2026 · Mason Pine Hotel');
+    $invited = Submission::factory()->finalist()->for(AwardCategory::factory()->invitationsSent()->awardsConfirmed(), 'awardCategory')
+        ->create(['award' => Award::Gold]);
+    $winner = Submission::factory()->finalist()->for(AwardCategory::factory()->winnersAnnounced(), 'awardCategory')
+        ->create(['award' => Award::Bronze]);
+
+    $this->actingAs($invited->user)
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('submissions.0.awardingNight', ['details' => '20 November 2026 · Mason Pine Hotel'])
+            ->where('submissions.0.award', null));
+
+    $this->actingAs($winner->user)
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('submissions.0.award', 'bronze'));
 });

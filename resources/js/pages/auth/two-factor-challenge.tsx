@@ -1,7 +1,6 @@
 import { Form, Head, setLayoutProps } from '@inertiajs/react';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useMemo, useState } from 'react';
-import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,6 +9,7 @@ import {
     InputOTPSlot,
 } from '@/components/ui/input-otp';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
+import { toastFormErrors } from '@/lib/form-errors';
 import { store } from '@/routes/two-factor/login';
 
 export default function TwoFactorChallenge() {
@@ -58,6 +58,7 @@ export default function TwoFactorChallenge() {
                     {...store.form()}
                     className="space-y-4"
                     resetOnError
+                    onError={(errors) => toastFormErrors(errors)}
                     resetOnSuccess={!showRecoveryInput}
                 >
                     {({ errors, processing, clearErrors }) => (
@@ -70,9 +71,9 @@ export default function TwoFactorChallenge() {
                                         placeholder="Enter recovery code"
                                         autoFocus={showRecoveryInput}
                                         required
-                                    />
-                                    <InputError
-                                        message={errors.recovery_code}
+                                        aria-invalid={Boolean(
+                                            errors.recovery_code,
+                                        )}
                                     />
                                 </>
                             ) : (
@@ -100,7 +101,6 @@ export default function TwoFactorChallenge() {
                                             </InputOTPGroup>
                                         </InputOTP>
                                     </div>
-                                    <InputError message={errors.code} />
                                 </div>
                             )}
 

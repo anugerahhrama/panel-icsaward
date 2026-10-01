@@ -6,6 +6,7 @@ use App\Actions\Judging\CalculateStageOneScores;
 use App\Actions\Judging\CalculateStageTwoScores;
 use App\Actions\Judging\ConfirmFinalists;
 use App\Actions\Judging\StageScoreCalculator;
+use App\Enums\Announcement;
 use App\Enums\Award;
 use App\Enums\ScoreRecapStage;
 use App\Enums\SubmissionStatus;
@@ -50,13 +51,15 @@ class ScoreRecapController extends Controller
                 ->withCount('finalists')
                 ->orderBy('sort_order')
                 ->orderBy('name')
-                ->get(['id', 'name', 'finalists_confirmed_at', 'awards_confirmed_at'])
+                ->get(['id', 'name', 'finalists_confirmed_at', 'awards_confirmed_at', 'finalists_announced_at', 'winners_announced_at'])
                 ->map(fn (AwardCategory $category): array => [
                     'id' => $category->id,
                     'name' => $category->name,
                     'finalists_confirmed_at' => $category->finalists_confirmed_at?->toIso8601String(),
                     'finalists_count' => $category->finalists_count,
                     'awards_confirmed_at' => $category->awards_confirmed_at?->toIso8601String(),
+                    'finalists_announced' => $category->isAnnounced(Announcement::Finalists),
+                    'winners_announced' => $category->isAnnounced(Announcement::Winners),
                 ]),
             'candidates' => $stage !== ScoreRecapStage::DeskEvaluation || $filters['category'] === null ? null : $this->finalistCandidates($filters['category']),
             'awardCandidates' => $stage !== ScoreRecapStage::Final || $filters['category'] === null ? null : $this->awardCandidates($filters['category']),

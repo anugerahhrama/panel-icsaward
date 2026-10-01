@@ -1,4 +1,6 @@
+import { Toaster } from '@/components/ui/sonner';
 import AuthLayoutTemplate from '@/layouts/auth/auth-simple-layout';
+import { FORM_ERROR_TOASTER_ID } from '@/lib/form-errors';
 
 export default function AuthLayout({
     title = '',
@@ -14,13 +16,16 @@ export default function AuthLayout({
     children: React.ReactNode;
 }) {
     return (
-        <AuthLayoutTemplate
-            title={title}
-            description={description}
-            wide={wide}
-            hideRegistrationPeriod={hideRegistrationPeriod}
-        >
-            {children}
-        </AuthLayoutTemplate>
+        <>
+            <AuthLayoutTemplate
+                title={title}
+                description={description}
+                wide={wide}
+                hideRegistrationPeriod={hideRegistrationPeriod}
+            >
+                {children}
+            </AuthLayoutTemplate>
+            <Toaster id={FORM_ERROR_TOASTER_ID} position="bottom-center" />
+        </>
     );
 }

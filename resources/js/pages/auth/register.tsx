@@ -3,7 +3,6 @@ import { Download } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { RegisterStepper } from '@/components/auth/register-stepper';
-import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { toastFormErrors } from '@/lib/form-errors';
 import { login } from '@/routes';
 import { store, validate } from '@/routes/register';
 
@@ -150,6 +150,7 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                 form.setError(
                     stepErrors as Partial<Record<keyof RegisterForm, string>>,
                 );
+                toastFormErrors(stepErrors);
             },
         });
     }
@@ -165,6 +166,8 @@ export default function Register({ passwordRules, categories, terms }: Props) {
 
         form.post(store.url(), {
             onError: (submitErrors) => {
+                toastFormErrors(submitErrors);
+
                 const firstStepWithErrors = STEPS.findIndex((candidate) =>
                     candidate.fields.some((field) => field in submitErrors),
                 );
@@ -192,6 +195,7 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                             <Label htmlFor="name">Full name</Label>
                             <Input
                                 id="name"
+                                aria-invalid={Boolean(errors.name)}
                                 autoFocus
                                 autoComplete="name"
                                 value={data.name}
@@ -200,7 +204,6 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                 }
                                 placeholder="Your full name"
                             />
-                            <InputError message={errors.name} />
                         </div>
 
                         <div className="grid gap-5 sm:grid-cols-2">
@@ -208,6 +211,7 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                 <Label htmlFor="email">Email address</Label>
                                 <Input
                                     id="email"
+                                    aria-invalid={Boolean(errors.email)}
                                     type="email"
                                     autoComplete="email"
                                     value={data.email}
@@ -216,13 +220,13 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                     }
                                     placeholder="email@company.com"
                                 />
-                                <InputError message={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label htmlFor="phone">Phone number</Label>
                                 <Input
                                     id="phone"
+                                    aria-invalid={Boolean(errors.phone)}
                                     type="tel"
                                     autoComplete="tel"
                                     value={data.phone}
@@ -231,7 +235,6 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                     }
                                     placeholder="+62 812-3456-7890"
                                 />
-                                <InputError message={errors.phone} />
                             </div>
                         </div>
 
@@ -240,6 +243,7 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                 <Label htmlFor="position">Position</Label>
                                 <Input
                                     id="position"
+                                    aria-invalid={Boolean(errors.position)}
                                     autoComplete="organization-title"
                                     value={data.position}
                                     onChange={(e) =>
@@ -247,7 +251,6 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                     }
                                     placeholder="e.g. Sustainability Manager"
                                 />
-                                <InputError message={errors.position} />
                             </div>
 
                             <div className="grid gap-2">
@@ -256,6 +259,7 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                 </Label>
                                 <Input
                                     id="company_name"
+                                    aria-invalid={Boolean(errors.company_name)}
                                     autoComplete="organization"
                                     value={data.company_name}
                                     onChange={(e) =>
@@ -263,7 +267,6 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                     }
                                     placeholder="PT Example Indonesia"
                                 />
-                                <InputError message={errors.company_name} />
                             </div>
                         </div>
 
@@ -272,6 +275,7 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                 <Label htmlFor="password">Password</Label>
                                 <PasswordInput
                                     id="password"
+                                    aria-invalid={Boolean(errors.password)}
                                     autoComplete="new-password"
                                     value={data.password}
                                     onChange={(e) =>
@@ -280,7 +284,6 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                     placeholder="Password"
                                     passwordrules={passwordRules}
                                 />
-                                <InputError message={errors.password} />
                             </div>
 
                             <div className="grid gap-2">
@@ -289,6 +292,9 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                 </Label>
                                 <PasswordInput
                                     id="password_confirmation"
+                                    aria-invalid={Boolean(
+                                        errors.password_confirmation,
+                                    )}
                                     autoComplete="new-password"
                                     value={data.password_confirmation}
                                     onChange={(e) =>
@@ -299,9 +305,6 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                     }
                                     placeholder="Confirm password"
                                     passwordrules={passwordRules}
-                                />
-                                <InputError
-                                    message={errors.password_confirmation}
                                 />
                             </div>
                         </div>
@@ -322,6 +325,9 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                             >
                                 <SelectTrigger
                                     id="award_category_id"
+                                    aria-invalid={Boolean(
+                                        errors.award_category_id,
+                                    )}
                                     className="w-full"
                                 >
                                     <SelectValue placeholder="Choose a category" />
@@ -345,7 +351,6 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                         ` · ${selectedCategory.description}`}
                                 </p>
                             )}
-                            <InputError message={errors.award_category_id} />
                         </div>
 
                         <div className="grid gap-2">
@@ -354,13 +359,13 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                             </Label>
                             <Input
                                 id="initiative_title"
+                                aria-invalid={Boolean(errors.initiative_title)}
                                 value={data.initiative_title}
                                 onChange={(e) =>
                                     setData('initiative_title', e.target.value)
                                 }
                                 placeholder="The name of your initiative"
                             />
-                            <InputError message={errors.initiative_title} />
                         </div>
 
                         <div className="grid gap-2">
@@ -369,6 +374,9 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                             </Label>
                             <Textarea
                                 id="initiative_description"
+                                aria-invalid={Boolean(
+                                    errors.initiative_description,
+                                )}
                                 rows={5}
                                 maxLength={DESCRIPTION_MAX_LENGTH}
                                 value={data.initiative_description}
@@ -384,9 +392,6 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                 {data.initiative_description.length}/
                                 {DESCRIPTION_MAX_LENGTH}
                             </p>
-                            <InputError
-                                message={errors.initiative_description}
-                            />
                         </div>
 
                         {selectedCategory?.paper_template_url && (
@@ -427,6 +432,9 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                             <div className="flex items-start gap-3">
                                 <Checkbox
                                     id="terms_accepted"
+                                    aria-invalid={Boolean(
+                                        errors.terms_accepted,
+                                    )}
                                     checked={data.terms_accepted}
                                     onCheckedChange={(checked) =>
                                         setData(
@@ -443,7 +451,6 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                     conditions of ICS Award 2026.
                                 </Label>
                             </div>
-                            <InputError message={errors.terms_accepted} />
                         </div>
                     </div>
                 )}

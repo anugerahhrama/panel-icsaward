@@ -4,6 +4,7 @@ use App\Http\Controllers\Judge\DashboardController;
 use App\Http\Controllers\Judge\ScoreController;
 use App\Http\Controllers\Judge\SubmissionController;
 use App\Http\Controllers\SubmissionFileController;
+use App\Http\Controllers\SubmissionFilePreviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'role:judge'])
@@ -22,4 +23,7 @@ Route::middleware(['auth', 'verified', 'role:judge'])
         Route::get('submissions/{submission}/files/{file}', SubmissionFileController::class)
             ->whereIn('file', ['paper', 'statement'])
             ->name('submissions.files.show');
+        Route::get('submissions/{submission}/files/{file}/preview', SubmissionFilePreviewController::class)
+            ->whereIn('file', ['paper', 'statement'])
+            ->name('submissions.files.preview');
     });

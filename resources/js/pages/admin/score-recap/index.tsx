@@ -71,6 +71,8 @@ type Category = {
     finalists_confirmed_at: string | null;
     finalists_count: number;
     awards_confirmed_at: string | null;
+    finalists_announced: boolean;
+    winners_announced: boolean;
 };
 
 type Props = {
@@ -450,9 +452,10 @@ export default function ScoreRecap({
                         <DialogDescription>
                             The finalists of{' '}
                             <strong>{selectedCategory?.name}</strong> go back to
-                            Qualified and disappear from their dashboards.
-                            Scores can be recalculated again once no category
-                            has confirmed finalists.
+                            Qualified. They are not announced yet, so
+                            participants see no change. Scores can be
+                            recalculated again once no category has confirmed
+                            finalists.
                         </DialogDescription>
                     )}
                     <DialogFooter>
@@ -526,9 +529,22 @@ function FinalistsBar({
                 </span>
             </div>
             {canReopen && (
-                <Button size="sm" variant="outline" onClick={onReopen}>
-                    Reopen
-                </Button>
+                <DisabledTooltip
+                    reason={
+                        category.finalists_announced
+                            ? 'The finalists are already announced to participants.'
+                            : null
+                    }
+                >
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={category.finalists_announced}
+                        onClick={onReopen}
+                    >
+                        Reopen
+                    </Button>
+                </DisabledTooltip>
             )}
         </div>
     );
@@ -588,9 +604,22 @@ function AwardsBar({
                 <span>{formatDateTimeWib(category.awards_confirmed_at)}</span>
             </div>
             {canReopen && (
-                <Button size="sm" variant="outline" onClick={onReopen}>
-                    Reopen
-                </Button>
+                <DisabledTooltip
+                    reason={
+                        category.winners_announced
+                            ? 'The winners are already announced to participants.'
+                            : null
+                    }
+                >
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={category.winners_announced}
+                        onClick={onReopen}
+                    >
+                        Reopen
+                    </Button>
+                </DisabledTooltip>
             )}
         </div>
     );

@@ -13,7 +13,8 @@ class SaveAdminAccount
 
     /**
      * Create or update an admin or superadmin account. New accounts are verified right away;
-     * the password is only replaced when a new one is given.
+     * the password is only replaced when a new one is given, keeping an encrypted copy
+     * that superadmins can view again.
      *
      * @param  array{name: string, email: string, position: string|null, phone: string|null, role: UserRole, password: string|null}  $data
      */
@@ -46,6 +47,7 @@ class SaveAdminAccount
 
             if ($data['password'] !== null) {
                 $account->password = $data['password'];
+                $account->account_password = $data['password'];
             }
 
             $account->save();

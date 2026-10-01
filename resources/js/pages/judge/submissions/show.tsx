@@ -4,8 +4,9 @@ import {
     type ScoringCriterion,
     ScoringForm,
 } from '@/components/judge/scoring-form';
+import { DocumentPreviewPanel } from '@/components/judge/document-preview-panel';
 import { ScoringStatusBadge } from '@/components/judge/scoring-status-badge';
-import { LockedFile } from '@/components/submissions/locked-file';
+import type { SubmittedFile } from '@/components/submissions/file-preview';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,10 +23,8 @@ type Props = {
         category: string;
         template: string | null;
         paper_uploaded_at: string | null;
-        paper_original_name: string | null;
-        paper_url: string | null;
-        statement_original_name: string | null;
-        statement_url: string | null;
+        paper: SubmittedFile | null;
+        statement: SubmittedFile | null;
     };
     criteria: ScoringCriterion[];
     submittedAt: string | null;
@@ -49,7 +48,7 @@ export default function ScoreSubmission({
     return (
         <>
             <Head title={submission.initiative_title} />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-clip rounded-xl p-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <Heading
                         title={submission.initiative_title}
@@ -71,91 +70,82 @@ export default function ScoreSubmission({
                     </div>
                 </div>
 
-                {!isScoringOpen && (
-                    <Alert>
-                        <AlertTitle>
-                            {isFrozen
-                                ? stage.value === 'pitching'
-                                    ? 'Pitching is final'
-                                    : 'Desk evaluation is final'
-                                : 'Scoring is closed'}
-                        </AlertTitle>
-                        <AlertDescription>
-                            {isFrozen
-                                ? stage.value === 'pitching'
-                                    ? 'Awards are confirmed for this category, so your pitching scores are shown read-only.'
-                                    : 'Finalists are confirmed for this category, so your desk evaluation scores are shown read-only.'
-                                : 'Your scores are shown read-only and cannot be changed right now.'}
-                        </AlertDescription>
-                    </Alert>
-                )}
+                <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+                    <DocumentPreviewPanel
+                        paper={submission.paper}
+                        statement={submission.statement}
+                        paperUploadedAt={submission.paper_uploaded_at}
+                        className="h-[70svh] min-w-0 lg:sticky lg:top-4 lg:order-last lg:h-[calc(100svh-2rem)]"
+                    />
 
-                {submittedAt && isScoringOpen && (
-                    <Alert>
-                        <AlertTitle>Scores submitted</AlertTitle>
-                        <AlertDescription>
-                            Submitted on {formatDateTimeWib(submittedAt)}. You
-                            can still update them while{' '}
-                            {stage.value === 'pitching'
-                                ? 'pitching'
-                                : 'desk evaluation'}{' '}
-                            is open.
-                        </AlertDescription>
-                    </Alert>
-                )}
+                    <div className="flex min-w-0 flex-col gap-4">
+                        {!isScoringOpen && (
+                            <Alert>
+                                <AlertTitle>
+                                    {isFrozen
+                                        ? stage.value === 'pitching'
+                                            ? 'Pitching is final'
+                                            : 'Desk evaluation is final'
+                                        : 'Scoring is closed'}
+                                </AlertTitle>
+                                <AlertDescription>
+                                    {isFrozen
+                                        ? stage.value === 'pitching'
+                                            ? 'Awards are confirmed for this category, so your pitching scores are shown read-only.'
+                                            : 'Finalists are confirmed for this category, so your desk evaluation scores are shown read-only.'
+                                        : 'Your scores are shown read-only and cannot be changed right now.'}
+                                </AlertDescription>
+                            </Alert>
+                        )}
 
-                <Card>
-                    <CardContent className="grid gap-4">
-                        <p className="text-sm whitespace-pre-line">
-                            {submission.initiative_description}
-                        </p>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                            {submission.paper_original_name && (
-                                <LockedFile
-                                    label="Submission paper"
-                                    name={submission.paper_original_name}
-                                    href={submission.paper_url}
-                                    detail={
-                                        submission.paper_uploaded_at
-                                            ? `Uploaded ${formatDateTimeWib(submission.paper_uploaded_at)}`
-                                            : undefined
-                                    }
+                        {submittedAt && isScoringOpen && (
+                            <Alert>
+                                <AlertTitle>Scores submitted</AlertTitle>
+                                <AlertDescription>
+                                    Submitted on{' '}
+                                    {formatDateTimeWib(submittedAt)}. You can
+                                    still update them while{' '}
+                                    {stage.value === 'pitching'
+                                        ? 'pitching'
+                                        : 'desk evaluation'}{' '}
+                                    is open.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        <Card>
+                            <CardContent>
+                                <p className="text-sm whitespace-pre-line">
+                                    {submission.initiative_description}
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        {criteria.length === 0 ? (
+                            <Alert variant="destructive">
+                                <AlertTitle>No assessment template</AlertTitle>
+                                <AlertDescription>
+                                    This category has no scoring criteria yet.
+                                    Please contact the committee.
+                                </AlertDescription>
+                            </Alert>
+                        ) : (
+                            <>
+                                <Heading
+                                    variant="small"
+                                    title={submission.template ?? 'Assessment'}
+                                    description="Score each criterion from 0 to 100. The weighted total is calculated as you type."
                                 />
-                            )}
-                            {submission.statement_original_name && (
-                                <LockedFile
-                                    label="Statement letter"
-                                    name={submission.statement_original_name}
-                                    href={submission.statement_url}
+                                <ScoringForm
+                                    submissionUuid={submission.uuid}
+                                    criteria={criteria}
+                                    isSubmitted={submittedAt !== null}
+                                    isScoringOpen={isScoringOpen}
                                 />
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {criteria.length === 0 ? (
-                    <Alert variant="destructive">
-                        <AlertTitle>No assessment template</AlertTitle>
-                        <AlertDescription>
-                            This category has no scoring criteria yet. Please
-                            contact the committee.
-                        </AlertDescription>
-                    </Alert>
-                ) : (
-                    <>
-                        <Heading
-                            variant="small"
-                            title={submission.template ?? 'Assessment'}
-                            description="Score each criterion from 0 to 100. The weighted total is calculated as you type."
-                        />
-                        <ScoringForm
-                            submissionUuid={submission.uuid}
-                            criteria={criteria}
-                            isSubmitted={submittedAt !== null}
-                            isScoringOpen={isScoringOpen}
-                        />
-                    </>
-                )}
+                            </>
+                        )}
+                    </div>
+                </div>
             </div>
         </>
     );

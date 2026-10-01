@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight } from 'lucide-react';
 import { KeyVisual } from '@/components/key-visual/key-visual';
+import { ProgressBar } from '@/components/progress-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,27 +23,6 @@ type Props = {
     progress: Progress;
     categories: (Progress & { id: number; name: string })[];
 };
-
-function percentage({ total, submitted }: Progress): number {
-    return total === 0 ? 0 : Math.round((submitted / total) * 100);
-}
-
-function ProgressBar({ progress }: { progress: Progress }) {
-    return (
-        <div
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={progress.total}
-            aria-valuenow={progress.submitted}
-            className="h-2 w-full overflow-hidden rounded-full bg-muted"
-        >
-            <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${percentage(progress)}%` }}
-            />
-        </div>
-    );
-}
 
 export default function JudgeDashboard({
     judgeName,
@@ -149,7 +129,10 @@ export default function JudgeDashboard({
                                                     ` · ${category.draft} draft`}
                                             </span>
                                         </div>
-                                        <ProgressBar progress={category} />
+                                        <ProgressBar
+                                            value={category.submitted}
+                                            max={category.total}
+                                        />
                                     </li>
                                 ))}
                             </ul>

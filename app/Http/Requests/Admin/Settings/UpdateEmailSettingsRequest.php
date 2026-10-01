@@ -12,7 +12,15 @@ class UpdateEmailSettingsRequest extends FormRequest
      *
      * @var list<string>
      */
-    public const array TEMPLATES = ['confirmation', 'qualified', 'needs_revision', 'disqualified'];
+    public const array TEMPLATES = [
+        'confirmation',
+        'qualified',
+        'needs_revision',
+        'disqualified',
+        'finalist_announcement',
+        'awarding_invitation',
+        'winner_announcement',
+    ];
 
     /**
      * Determine if the user is authorized to make this request.

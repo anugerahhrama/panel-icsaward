@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Announcement;
 use App\Enums\Award;
 use App\Enums\JudgingStage;
 use App\Enums\ScoreRecapStage;
@@ -55,6 +56,9 @@ use Illuminate\Support\Carbon;
  * @property int|null $final_rank
  * @property Carbon|null $final_calculated_at
  * @property Award|null $award
+ * @property Carbon|null $finalist_notified_at
+ * @property Carbon|null $invitation_notified_at
+ * @property Carbon|null $award_notified_at
  * @property-read bool|null $judge_has_scores
  * @property-read bool|null $judge_has_submitted
  * @property-read string|null $judge_scored_at
@@ -131,6 +135,19 @@ class Submission extends Model
     }
 
     /**
+     * The status the participant may see: a finalist stays "qualified" until the committee announces the category's
+     * finalists. Loads `awardCategory`.
+     */
+    public function statusForParticipant(): SubmissionStatus
+    {
+        if ($this->status === SubmissionStatus::Finalist && ! $this->awardCategory->isAnnounced(Announcement::Finalists)) {
+            return SubmissionStatus::Qualified;
+        }
+
+        return $this->status;
+    }
+
+    /**
      * The stored path and original name of a submitted file, or null when it was never uploaded.
      *
      * @param  'paper'|'statement'  $file
@@ -155,7 +172,7 @@ class Submission extends Model
     protected function filteredForAdmin(Builder $query, array $filters): void
     {
         $query
-            ->with(['user:id,name,email,phone,position,company_name', 'awardCategory:id,name'])
+            ->with(['user:id,name,email,phone,position,company_name,email_verified_at', 'awardCategory:id,name,applicant_type'])
             ->when($filters['search'], function (Builder $query, string $search): void {
                 $query->where(fn (Builder $query) => $query
                     ->whereLike('initiative_title', "%{$search}%")
@@ -231,6 +248,24 @@ class Submission extends Model
     }
 
     /**
+     * Limit to the submissions scored in the stage: qualified (or confirmed finalist) in desk evaluation, and only the
+     * finalists of categories with confirmed finalists in pitching.
+     *
+     * @param  Builder<$this>  $query
+     */
+    #[Scope]
+    protected function scoredInStage(Builder $query, JudgingStage $stage): void
+    {
+        $query->when(
+            $stage === JudgingStage::Pitching,
+            fn (Builder $query) => $query
+                ->where('status', SubmissionStatus::Finalist)
+                ->whereHas('awardCategory', fn (Builder $category) => $category->whereNotNull('finalists_confirmed_at')),
+            fn (Builder $query) => $query->whereIn('status', SubmissionStatus::rankable()),
+        );
+    }
+
+    /**
      * Limit to the submissions a judge scores, in a category the judge is assigned to and not recused from: qualified
      * (or confirmed finalist) in desk evaluation, and only the finalists of categories with confirmed finalists in pitching.
      *
@@ -240,13 +275,7 @@ class Submission extends Model
     protected function assignedToJudge(Builder $query, Judge $judge, JudgingStage $stage = JudgingStage::DeskEvaluation): void
     {
         $query
-            ->when(
-                $stage === JudgingStage::Pitching,
-                fn (Builder $query) => $query
-                    ->where('status', SubmissionStatus::Finalist)
-                    ->whereHas('awardCategory', fn (Builder $category) => $category->whereNotNull('finalists_confirmed_at')),
-                fn (Builder $query) => $query->whereIn('status', SubmissionStatus::rankable()),
-            )
+            ->scoredInStage($stage)
             ->whereHas('awardCategory.judges', fn (Builder $judges) => $judges
                 ->where('judges.id', $judge->id)
                 ->where('category_judges.is_recused', false));
@@ -397,6 +426,9 @@ class Submission extends Model
             'final_rank' => 'integer',
             'final_calculated_at' => 'datetime',
             'award' => Award::class,
+            'finalist_notified_at' => 'datetime',
+            'invitation_notified_at' => 'datetime',
+            'award_notified_at' => 'datetime',
         ];
     }
 }

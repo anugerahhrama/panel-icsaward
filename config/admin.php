@@ -16,4 +16,21 @@ return [
 
     'prefix' => env('ADMIN_PANEL_PREFIX', 'panel-94267def'),
 
+    /*
+    |--------------------------------------------------------------------
+    | Initial Superadmin
+    |--------------------------------------------------------------------
+    |
+    | Account created by `php artisan db:seed` when no user with this
+    | email exists yet. Required in production; the password must pass
+    | Password::defaults(). Never commit real credentials here.
+    |
+    */
+
+    'superadmin' => [
+        'name' => env('SUPERADMIN_NAME', 'Superadmin'),
+        'email' => env('SUPERADMIN_EMAIL'),
+        'password' => env('SUPERADMIN_PASSWORD'),
+    ],
+
 ];

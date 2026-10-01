@@ -27,6 +27,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $company_name
  * @property CarbonImmutable|null $email_verified_at
  * @property string $password
+ * @property string|null $account_password
  * @property UserRole $role
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -37,7 +38,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property CarbonImmutable|null $deleted_at
  */
 #[Fillable(['name', 'email', 'phone', 'position', 'company_name', 'password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['password', 'account_password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -97,6 +98,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'account_password' => 'encrypted',
             'role' => UserRole::class,
             'two_factor_confirmed_at' => 'datetime',
         ];

@@ -76,3 +76,7 @@ Tabel yang datanya dipaginasi Laravel memakai `useServerTable({ url, prop, colum
 ## Field `<Form>` yang dikunci tapi tetap divalidasi server: `readOnly`, bukan `disabled`
 
 Input `disabled` tidak ikut terkirim, jadi rule `required` di FormRequest gagal walaupun user tidak mengubah apa pun. Kalau field harus tetap terkirim saat terkunci (mis. bobot tahap di Settings → Judging setelah award dikonfirmasi), pakai `readOnly` + teks penjelas, lalu tolak perubahannya di server. Reference: `pages/admin/settings/judging.tsx`. (Skor Tahap 2 (2/2), 2026-10-01.)
+
+## Warna seri grafik: biru & hijau brand yang sudah divalidasi, grafik dibuat dengan CSS
+
+Belum ada library chart (jangan tambah tanpa persetujuan). Grafik dibuat dengan div/CSS + `Tooltip` per titik. Reference: `components/admin/overview/registration-trend.tsx`. Seri 1 = `bg-[#0567cc] dark:bg-[#3b87dc]`, seri 2 = `bg-[#00a64c] dark:bg-[#14a85a]`. Pasangan ini lolos validator dataviz (lightness, CVD, kontras) di light (#fff) dan dark (#0a0a0a). Warna seri baru wajib divalidasi ulang, jangan dipilih sekadar dilihat. Legend selalu ada untuk ≥ 2 seri, dan teks tetap memakai token teks, bukan warna seri. (Admin Overview, 2026-10-01.)

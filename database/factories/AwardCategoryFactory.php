@@ -45,4 +45,44 @@ class AwardCategoryFactory extends Factory
             'finalists_confirmed_at' => now(),
         ]);
     }
+
+    /**
+     * Indicate that the committee confirmed the category's awards.
+     */
+    public function awardsConfirmed(): static
+    {
+        return $this->finalistsConfirmed()->state(fn (array $attributes) => [
+            'awards_confirmed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the committee announced the category's finalists to participants.
+     */
+    public function finalistsAnnounced(): static
+    {
+        return $this->finalistsConfirmed()->state(fn (array $attributes) => [
+            'finalists_announced_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the committee sent the Awarding Night invitations of the category.
+     */
+    public function invitationsSent(): static
+    {
+        return $this->finalistsAnnounced()->state(fn (array $attributes) => [
+            'invitations_sent_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the committee announced the category's winners to participants.
+     */
+    public function winnersAnnounced(): static
+    {
+        return $this->invitationsSent()->awardsConfirmed()->state(fn (array $attributes) => [
+            'winners_announced_at' => now(),
+        ]);
+    }
 }

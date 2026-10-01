@@ -1,5 +1,5 @@
 import { Form, Head, usePage } from '@inertiajs/react';
-import InputError from '@/components/input-error';
+import { useEffect } from 'react';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { toastFormErrors } from '@/lib/form-errors';
 import { register } from '@/routes';
 import { redirect as googleRedirect } from '@/routes/auth/google';
 import { store } from '@/routes/login';
@@ -20,6 +21,10 @@ type Props = {
 export default function Login({ status, canResetPassword }: Props) {
     const googleError = usePage().props.errors.google;
 
+    useEffect(() => {
+        toastFormErrors({ google: googleError });
+    }, [googleError]);
+
     return (
         <>
             <Head title="Log in" />
@@ -27,6 +32,7 @@ export default function Login({ status, canResetPassword }: Props) {
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
+                onError={(errors) => toastFormErrors(errors)}
                 className="flex flex-col gap-6"
             >
                 {({ processing, errors }) => (
@@ -43,8 +49,8 @@ export default function Login({ status, canResetPassword }: Props) {
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="email@example.com"
+                                    aria-invalid={Boolean(errors.email)}
                                 />
-                                <InputError message={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
@@ -67,8 +73,8 @@ export default function Login({ status, canResetPassword }: Props) {
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Password"
+                                    aria-invalid={Boolean(errors.password)}
                                 />
-                                <InputError message={errors.password} />
                             </div>
 
                             <div className="flex items-center space-x-3">
@@ -97,19 +103,16 @@ export default function Login({ status, canResetPassword }: Props) {
                                 <span className="h-px flex-1 bg-border" />
                             </div>
 
-                            <div className="grid gap-2">
-                                <Button
-                                    variant="outline"
-                                    className="w-full"
-                                    asChild
-                                >
-                                    <a href={googleRedirect.url()} tabIndex={5}>
-                                        <GoogleIcon />
-                                        Continue with Google
-                                    </a>
-                                </Button>
-                                <InputError message={googleError} />
-                            </div>
+                            <Button
+                                variant="outline"
+                                className="w-full"
+                                asChild
+                            >
+                                <a href={googleRedirect.url()} tabIndex={5}>
+                                    <GoogleIcon />
+                                    Continue with Google
+                                </a>
+                            </Button>
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">

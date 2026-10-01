@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\RegistrationStatus;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -58,6 +59,7 @@ class HandleInertiaRequests extends Middleware
             'registrationPeriod' => fn (): array => [
                 'opensAt' => Setting::get('registration_opens_at'),
                 'closesAt' => Setting::get('registration_deadline'),
+                'isOpen' => RegistrationStatus::current()->isOpen(),
             ],
         ];
     }

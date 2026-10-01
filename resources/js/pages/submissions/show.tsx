@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useTimeLeft } from '@/hooks/use-time-left';
 import { formatDateTimeWib } from '@/lib/datetime';
+import { FORM_ERROR_TOASTER_ID, toastFormErrors } from '@/lib/form-errors';
 import { dashboard } from '@/routes';
 import { store } from '@/routes/submissions/paper';
 
@@ -246,14 +247,9 @@ function PaperForm({
                     isRevision
                         ? 'Your revised files have been submitted.'
                         : 'Your paper has been submitted.',
+                    { toasterId: FORM_ERROR_TOASTER_ID },
                 ),
-            onError: () =>
-                toast.error(
-                    isRevision
-                        ? 'Your revision could not be submitted.'
-                        : 'Your paper could not be submitted.',
-                    { description: 'Please check the fields below.' },
-                ),
+            onError: (errors) => toastFormErrors(errors),
         });
     }
 
@@ -321,7 +317,7 @@ function PaperForm({
                 currentName={submission.paperOriginalName}
                 file={form.data.paper}
                 onChange={(file) => form.setData('paper', file)}
-                error={form.errors.paper}
+                invalid={Boolean(form.errors.paper)}
                 accept={acceptList(requirements.paperExtensions)}
                 hint={`${paperFormats} · max ${requirements.maxSizeMb} MB${keepCurrentHint}`}
             />
@@ -333,7 +329,7 @@ function PaperForm({
                     currentName={submission.statementOriginalName}
                     file={form.data.statement_letter}
                     onChange={(file) => form.setData('statement_letter', file)}
-                    error={form.errors.statement_letter}
+                    invalid={Boolean(form.errors.statement_letter)}
                     accept={acceptList(requirements.statementLetterExtensions)}
                     hint={`${statementFormats} · max ${requirements.maxSizeMb} MB${keepCurrentHint}`}
                 />

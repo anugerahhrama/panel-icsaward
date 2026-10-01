@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Judge;
 
+use App\Enums\FilePreviewKind;
 use App\Enums\JudgingStage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Judge\SubmissionFilterRequest;
@@ -65,7 +66,7 @@ class SubmissionController extends Controller
     }
 
     /**
-     * Show the scoring page: the submission, its files and the rubric with the judge's own scores for the stage judges see.
+     * Show the scoring page: the submission, its files (download and preview links) and the rubric with the judge's own scores for the stage judges see.
      */
     public function show(Request $request, Submission $submission): Response
     {
@@ -100,14 +101,18 @@ class SubmissionController extends Controller
                 'category' => $submission->awardCategory->name,
                 'template' => $submission->awardCategory->assessmentTemplate?->name,
                 'paper_uploaded_at' => $submission->paper_uploaded_at?->toIso8601String(),
-                'paper_original_name' => $submission->paper_original_name,
-                'paper_url' => $submission->paper_path === null
-                    ? null
-                    : route('judge.submissions.files.show', [$submission, 'paper']),
-                'statement_original_name' => $submission->statement_original_name,
-                'statement_url' => $submission->statement_path === null
-                    ? null
-                    : route('judge.submissions.files.show', [$submission, 'statement']),
+                'paper' => $submission->paper_path === null ? null : [
+                    'name' => $submission->paper_original_name,
+                    'url' => route('judge.submissions.files.show', [$submission, 'paper']),
+                    'preview_url' => route('judge.submissions.files.preview', [$submission, 'paper']),
+                    'preview_kind' => FilePreviewKind::fromFileName($submission->paper_original_name)->value,
+                ],
+                'statement' => $submission->statement_path === null ? null : [
+                    'name' => $submission->statement_original_name,
+                    'url' => route('judge.submissions.files.show', [$submission, 'statement']),
+                    'preview_url' => route('judge.submissions.files.preview', [$submission, 'statement']),
+                    'preview_kind' => FilePreviewKind::fromFileName($submission->statement_original_name)->value,
+                ],
             ],
             'criteria' => $criteria->map(function (ScoringCriterion $criterion) use ($scores): array {
                 /** @var JudgeScore|null $score */

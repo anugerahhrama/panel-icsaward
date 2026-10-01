@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Announcement;
 use App\Enums\ApplicantType;
 use App\Enums\JudgingStage;
 use App\Enums\SubmissionStatus;
@@ -37,6 +38,12 @@ use Illuminate\Support\Facades\Storage;
  * @property int|null $finalists_confirmed_by
  * @property CarbonImmutable|null $awards_confirmed_at
  * @property int|null $awards_confirmed_by
+ * @property CarbonImmutable|null $finalists_announced_at
+ * @property int|null $finalists_announced_by
+ * @property CarbonImmutable|null $invitations_sent_at
+ * @property int|null $invitations_sent_by
+ * @property CarbonImmutable|null $winners_announced_at
+ * @property int|null $winners_announced_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -158,6 +165,14 @@ class AwardCategory extends Model
     }
 
     /**
+     * Whether the committee has made this announcement for the category, after which participants see its result.
+     */
+    public function isAnnounced(Announcement $announcement): bool
+    {
+        return $this->{$announcement->categoryColumn()} !== null;
+    }
+
+    /**
      * Whether the category's scores of a stage are frozen: desk evaluation once the finalists are confirmed, pitching
      * once the awards are confirmed.
      */
@@ -216,6 +231,9 @@ class AwardCategory extends Model
             'sort_order' => 'integer',
             'finalists_confirmed_at' => 'datetime',
             'awards_confirmed_at' => 'datetime',
+            'finalists_announced_at' => 'datetime',
+            'invitations_sent_at' => 'datetime',
+            'winners_announced_at' => 'datetime',
         ];
     }
 }

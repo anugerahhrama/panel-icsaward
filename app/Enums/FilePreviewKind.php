@@ -14,7 +14,7 @@ enum FilePreviewKind: string
     private const array OFFICE_EXTENSIONS = ['ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx'];
 
     /**
-     * Decide how the admin panel previews a file from its extension; anything unknown can only be downloaded.
+     * Decide how a file is previewed from its extension; anything unknown can only be downloaded.
      */
     public static function fromFileName(?string $name): self
     {

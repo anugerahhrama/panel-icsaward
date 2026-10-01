@@ -164,3 +164,14 @@ test('judges and participants cannot confirm or reopen awards', function (string
 
     expect($category->fresh()->awards_confirmed_at)->toBeNull();
 })->with(['judge', 'participant']);
+
+test('awards cannot be reopened once the winners are announced', function () {
+    $category = AwardCategory::factory()->winnersAnnounced()->create();
+    $winner = Submission::factory()->finalist()->for($category, 'awardCategory')->create(['award' => Award::Gold]);
+
+    $this->actingAs(User::factory()->superadmin()->create())
+        ->delete(route('admin.score-recap.awards.destroy', $category))
+        ->assertInertiaFlash('toast.message', 'The winners of this category are already announced, so the awards cannot be reopened.');
+
+    expect($winner->fresh()->award)->toBe(Award::Gold);
+});

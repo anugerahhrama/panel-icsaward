@@ -2,6 +2,7 @@
 
 use App\Models\Setting;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
@@ -81,9 +82,25 @@ test('users are rate limited', function () {
 test('login screen shares the registration period from settings', function () {
     Setting::put('registration_opens_at', '2026-09-28');
     Setting::put('registration_deadline', '2026-10-19');
+    $this->travelTo(CarbonImmutable::parse('2026-10-19 23:59:59', Setting::EVENT_TIMEZONE));
 
     $this->get(route('login'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('registrationPeriod.opensAt', '2026-09-28')
-            ->where('registrationPeriod.closesAt', '2026-10-19'));
+            ->where('registrationPeriod.closesAt', '2026-10-19')
+            ->where('registrationPeriod.isOpen', true));
 });
+
+test('login screen shares that registration is not open', function (string $key, string $value) {
+    Setting::put('registration_opens_at', '2026-09-28');
+    Setting::put('registration_deadline', '2026-10-19');
+    Setting::put($key, $value);
+    $this->travelTo(CarbonImmutable::parse('2026-10-01 12:00:00', Setting::EVENT_TIMEZONE));
+
+    $this->get(route('login'))
+        ->assertInertia(fn (Assert $page) => $page->where('registrationPeriod.isOpen', false));
+})->with([
+    'closed by admin' => ['is_registration_open', '0'],
+    'not open yet' => ['registration_opens_at', '2026-10-02'],
+    'past the deadline' => ['registration_deadline', '2026-09-30'],
+]);

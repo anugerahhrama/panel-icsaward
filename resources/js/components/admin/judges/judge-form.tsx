@@ -1,5 +1,5 @@
-import { router, useForm, usePage } from '@inertiajs/react';
-import { Eye, KeyRound, LockIcon } from 'lucide-react';
+import { useForm, usePage } from '@inertiajs/react';
+import { KeyRound, LockIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { CopyPasswordButton } from '@/components/admin/copy-password-button';
@@ -7,6 +7,7 @@ import { JUDGING_LOCKED_REASON } from '@/components/admin/judging-lock-alert';
 import { LogoUploadField } from '@/components/admin/logo-upload-field';
 import { SaveButton } from '@/components/admin/save-button';
 import { SettingsSection } from '@/components/admin/settings-section';
+import { StoredPassword } from '@/components/admin/stored-password';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { generatePassword } from '@/lib/password';
 import { store, update } from '@/routes/admin/judges';
@@ -77,55 +77,6 @@ type JudgeFormProps = {
     assignmentsLocked?: boolean;
     accountPassword?: string | null;
 };
-
-function StoredPassword({
-    accountPassword,
-}: {
-    accountPassword: string | null | undefined;
-}) {
-    const [loading, setLoading] = useState(false);
-
-    if (accountPassword === undefined) {
-        return (
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={loading}
-                onClick={() => {
-                    setLoading(true);
-                    router.reload({
-                        only: ['accountPassword'],
-                        onFinish: () => setLoading(false),
-                    });
-                }}
-            >
-                {loading ? <Spinner /> : <Eye />}
-                Show password
-            </Button>
-        );
-    }
-
-    if (accountPassword === null) {
-        return (
-            <p className="text-sm text-muted-foreground">
-                The judge has changed their password since it was set.
-            </p>
-        );
-    }
-
-    return (
-        <div className="flex gap-2">
-            <Input
-                readOnly
-                value={accountPassword}
-                className="font-mono"
-                aria-label="Current password"
-            />
-            <CopyPasswordButton value={accountPassword} />
-        </div>
-    );
-}
 
 export function JudgeForm({
     judge,
@@ -486,7 +437,9 @@ export function JudgeForm({
                                     <div className="grid gap-2 rounded-md border border-dashed p-3">
                                         <Label>Current password</Label>
                                         <StoredPassword
-                                            accountPassword={accountPassword}
+                                            value={accountPassword}
+                                            prop="accountPassword"
+                                            changedMessage="The judge has changed their password since it was set."
                                         />
                                         <p className="text-xs text-muted-foreground">
                                             Visible to superadmins only.

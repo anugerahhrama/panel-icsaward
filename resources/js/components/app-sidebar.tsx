@@ -3,6 +3,7 @@ import {
     ClipboardList,
     Gavel,
     LayoutGrid,
+    Megaphone,
     Presentation,
     Settings,
     Trophy,
@@ -25,6 +26,7 @@ import {
 import { dashboard } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
 import adminAccounts from '@/routes/admin/accounts';
+import announcements from '@/routes/admin/announcements';
 import assessmentTemplates from '@/routes/admin/assessment-templates';
 import categories from '@/routes/admin/categories';
 import judges from '@/routes/admin/judges';
@@ -112,6 +114,11 @@ const adminNavItems = (isSuperadmin: boolean): NavItem[] => [
         title: 'Pitching',
         href: pitching.index(),
         icon: Presentation,
+    },
+    {
+        title: 'Announcements',
+        href: announcements.index(),
+        icon: Megaphone,
     },
     ...(isSuperadmin
         ? [

@@ -17,6 +17,9 @@ export type SubmittedFile = {
     preview_kind: 'pdf' | 'image' | 'office' | 'download';
 };
 
+export const OFFICE_PREVIEW_NOTE =
+    "Office files are rendered by Microsoft Office Online. If the preview doesn't load, download the file.";
+
 /**
  * File name that opens the preview dialog instead of downloading the file.
  */
@@ -41,6 +44,30 @@ export function FilePreviewButton({
             <Eye className="size-3.5 shrink-0" />
             <span className="truncate">{file.name}</span>
         </button>
+    );
+}
+
+/**
+ * "Open in new tab" (when the file can be previewed) and "Download" buttons for a submitted file.
+ */
+export function FilePreviewActions({ file }: { file: SubmittedFile }) {
+    return (
+        <div className="flex flex-wrap gap-2">
+            {file.preview_kind !== 'download' && (
+                <Button variant="outline" size="sm" asChild>
+                    <a href={file.preview_url} target="_blank" rel="noreferrer">
+                        <ExternalLink />
+                        Open in new tab
+                    </a>
+                </Button>
+            )}
+            <Button variant="outline" size="sm" asChild>
+                <a href={file.url}>
+                    <Download />
+                    Download
+                </a>
+            </Button>
+        </div>
     );
 }
 
@@ -71,6 +98,26 @@ function PreviewFrame({ file }: { file: SubmittedFile }) {
     );
 }
 
+/**
+ * The file rendered inline (PDF, image or Office Online), or a download hint when it can't be previewed.
+ * Fills the remaining height of a flex column parent.
+ */
+export function FilePreviewFrame({ file }: { file: SubmittedFile }) {
+    if (file.preview_kind === 'download') {
+        return (
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 rounded-md border border-dashed p-4 text-center">
+                <FileX className="size-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                    Preview isn't available for this file type. Download it to
+                    open it.
+                </p>
+            </div>
+        );
+    }
+
+    return <PreviewFrame key={file.preview_url} file={file} />;
+}
+
 export function FilePreviewDialog({
     file,
     onOpenChange,
@@ -89,41 +136,12 @@ export function FilePreviewDialog({
                             </DialogTitle>
                             <DialogDescription>
                                 {file.preview_kind === 'office'
-                                    ? "Office files are rendered by Microsoft Office Online. If the preview doesn't load, download the file."
+                                    ? OFFICE_PREVIEW_NOTE
                                     : 'Preview of the file submitted by the participant.'}
                             </DialogDescription>
-                            <div className="flex flex-wrap gap-2">
-                                {file.preview_kind !== 'download' && (
-                                    <Button variant="outline" size="sm" asChild>
-                                        <a
-                                            href={file.preview_url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            <ExternalLink />
-                                            Open in new tab
-                                        </a>
-                                    </Button>
-                                )}
-                                <Button variant="outline" size="sm" asChild>
-                                    <a href={file.url}>
-                                        <Download />
-                                        Download
-                                    </a>
-                                </Button>
-                            </div>
+                            <FilePreviewActions file={file} />
                         </DialogHeader>
-                        {file.preview_kind === 'download' ? (
-                            <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-md border border-dashed text-center">
-                                <FileX className="size-8 text-muted-foreground" />
-                                <p className="text-sm text-muted-foreground">
-                                    Preview isn't available for this file type.
-                                    Download it to open it.
-                                </p>
-                            </div>
-                        ) : (
-                            <PreviewFrame key={file.preview_url} file={file} />
-                        )}
+                        <FilePreviewFrame file={file} />
                     </>
                 )}
             </DialogContent>

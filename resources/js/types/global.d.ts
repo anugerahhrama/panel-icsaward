@@ -15,6 +15,7 @@ declare module '@inertiajs/core' {
             registrationPeriod: {
                 opensAt: string | null;
                 closesAt: string | null;
+                isOpen: boolean;
             };
             [key: string]: unknown;
         };

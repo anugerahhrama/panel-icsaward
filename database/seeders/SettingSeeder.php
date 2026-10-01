@@ -11,6 +11,10 @@ class SettingSeeder extends Seeder
      * Seed default settings.
      *
      * Uses `firstOrCreate` (not `updateOrCreate`) so re-seeding never overwrites a value an admin has since edited.
+     *
+     * Email templates and the deck schedule are official values. `terms_organization` / `terms_individual` are
+     * `[Placeholder]` text and `contact_email` still needs the team's confirmation: set both through
+     * Admin → Settings before go-live (see the deploy checklist in `.ai/PROJECT.md`).
      */
     public function run(): void
     {
@@ -111,6 +115,68 @@ class SettingSeeder extends Seeder
                 **Reason:**
 
                 {{disqualified_reason}}
+
+                If you have any questions, please contact us at {{contact_email}}.
+
+                Warm regards,<br>
+                ICS Award 2026 Committee<br>
+                Olahkarsa Group, with IBCSD as Knowledge Partner
+                MARKDOWN,
+            'finalist_announcement_email_subject' => 'ICS Award 2026: You are a Top 5 finalist',
+            'finalist_announcement_email_body' => <<<'MARKDOWN'
+                Dear {{name}},
+
+                Congratulations! Your initiative has been selected as one of the Top 5 finalists of the Indonesia Corporate Sustainability Award (ICS Award) 2026.
+
+                - **Category:** {{category}}
+                - **Initiative:** {{initiative_title}}
+
+                As a finalist, you will present your initiative to the Board of Judges in a pitching session.
+
+                **Pitching schedule:** {{pitching_schedule}}
+
+                Your schedule and any updates are shown on your dashboard:
+
+                {{dashboard_link}}
+
+                If you have any questions, please contact us at {{contact_email}}.
+
+                Warm regards,<br>
+                ICS Award 2026 Committee<br>
+                Olahkarsa Group, with IBCSD as Knowledge Partner
+                MARKDOWN,
+            'awarding_invitation_email_subject' => 'ICS Award 2026: Invitation to the Awarding Night',
+            'awarding_invitation_email_body' => <<<'MARKDOWN'
+                Dear {{name}},
+
+                As a finalist of the Indonesia Corporate Sustainability Award (ICS Award) 2026, you are cordially invited to the Awarding Night, where the winners of every category will be announced.
+
+                - **Category:** {{category}}
+                - **Initiative:** {{initiative_title}}
+                - **When & where:** {{awarding_night}}
+
+                The details are also shown on your dashboard:
+
+                {{dashboard_link}}
+
+                If you have any questions, please contact us at {{contact_email}}.
+
+                Warm regards,<br>
+                ICS Award 2026 Committee<br>
+                Olahkarsa Group, with IBCSD as Knowledge Partner
+                MARKDOWN,
+            'winner_announcement_email_subject' => 'ICS Award 2026: Congratulations on your {{award}} award',
+            'winner_announcement_email_body' => <<<'MARKDOWN'
+                Dear {{name}},
+
+                Congratulations! Your initiative received the **{{award}}** award at the Indonesia Corporate Sustainability Award (ICS Award) 2026.
+
+                - **Category:** {{category}}
+                - **Initiative:** {{initiative_title}}
+
+                Thank you for your commitment to sustainability. You can see your result on your dashboard:
+
+                {{dashboard_link}}
 
                 If you have any questions, please contact us at {{contact_email}}.
 

@@ -248,3 +248,14 @@ test('judges still see the submissions that became finalists', function () {
             ->has('submissions.data', 1)
             ->where('submissions.data.0.uuid', $finalist->uuid));
 });
+
+test('announced finalists cannot be reopened', function () {
+    $category = AwardCategory::factory()->finalistsAnnounced()->create();
+    $finalist = Submission::factory()->finalist()->for($category, 'awardCategory')->create();
+
+    $this->actingAs(User::factory()->superadmin()->create())
+        ->delete(route('admin.score-recap.finalists.destroy', $category))
+        ->assertInertiaFlash('toast.message', 'The finalists of this category are already announced, so they cannot be reopened.');
+
+    expect($finalist->fresh()->status)->toBe(SubmissionStatus::Finalist);
+});

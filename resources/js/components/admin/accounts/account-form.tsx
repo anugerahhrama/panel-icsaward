@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { CopyPasswordButton } from '@/components/admin/copy-password-button';
 import { SaveButton } from '@/components/admin/save-button';
+import { StoredPassword } from '@/components/admin/stored-password';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
@@ -27,10 +28,16 @@ import { store, update } from '@/routes/admin/accounts';
 type AccountFormProps = {
     account?: AccountRow;
     isSelf: boolean;
+    accountPassword?: string | null;
     onSaved?: () => void;
 };
 
-export function AccountForm({ account, isSelf, onSaved }: AccountFormProps) {
+export function AccountForm({
+    account,
+    isSelf,
+    accountPassword,
+    onSaved,
+}: AccountFormProps) {
     const [isPasswordVisible, setPasswordVisible] = useState(false);
     const { data, setData, post, put, processing, errors } = useForm<{
         name: string;
@@ -192,7 +199,7 @@ export function AccountForm({ account, isSelf, onSaved }: AccountFormProps) {
                     {account
                         ? 'Leave blank to keep the current password. '
                         : ''}
-                    Copy the password before saving — it cannot be viewed again.
+                    Superadmins can view the password again from Edit.
                 </p>
                 <InputError message={errors.password} />
             </div>
@@ -212,6 +219,21 @@ export function AccountForm({ account, isSelf, onSaved }: AccountFormProps) {
                     }
                 />
             </div>
+
+            {account?.has_account_password && (
+                <div className="grid gap-2 rounded-md border border-dashed p-3">
+                    <Label>Current password</Label>
+                    <StoredPassword
+                        value={accountPassword}
+                        prop="revealedPassword"
+                        data={{ reveal: account.id }}
+                        changedMessage="The account owner has changed their password since it was set."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Visible to superadmins only.
+                    </p>
+                </div>
+            )}
 
             <SaveButton processing={processing} />
         </form>

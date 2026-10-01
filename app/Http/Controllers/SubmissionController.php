@@ -36,7 +36,7 @@ class SubmissionController extends Controller
                 'initiativeTitle' => $submission->initiative_title,
                 'category' => $submission->awardCategory->name,
                 'paperTemplateUrl' => $submission->awardCategory->paper_template_url ?? Setting::publicFileUrl('submission_template_path'),
-                'status' => $submission->status->value,
+                'status' => $submission->statusForParticipant()->value,
                 'paperUploadedAt' => $submission->paper_uploaded_at?->toIso8601String(),
                 'paperOriginalName' => $submission->paper_original_name,
                 'paperUrl' => $submission->paper_path === null

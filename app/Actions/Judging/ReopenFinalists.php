@@ -2,6 +2,7 @@
 
 namespace App\Actions\Judging;
 
+use App\Enums\Announcement;
 use App\Enums\JudgingStage;
 use App\Enums\SubmissionStatus;
 use App\Models\AwardCategory;
@@ -17,7 +18,8 @@ class ReopenFinalists
     /**
      * Undo a category's finalist confirmation: its finalists go back to `qualified` and its results are no longer frozen.
      *
-     * Refused once a finalist has pitching scores, since those belong to the confirmed selection. The finalists'
+     * Refused once the finalists are announced, since participants have already been told, or once a finalist has
+     * pitching scores, since those belong to the confirmed selection. The finalists'
      * pitching slots are removed; the category's pitching session stays for the next selection.
      *
      * @throws ValidationException
@@ -30,6 +32,12 @@ class ReopenFinalists
             if (! $category->isFinalistsConfirmed()) {
                 throw ValidationException::withMessages([
                     'finalists' => 'The finalists for this category are not confirmed.',
+                ]);
+            }
+
+            if ($category->isAnnounced(Announcement::Finalists)) {
+                throw ValidationException::withMessages([
+                    'finalists' => 'The finalists of this category are already announced, so they cannot be reopened.',
                 ]);
             }
 

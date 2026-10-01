@@ -6,10 +6,15 @@ import {
     CircleX,
     Clock,
     Download,
+    PartyPopper,
     MapPin,
     Trophy,
     Upload,
 } from 'lucide-react';
+import {
+    type Award,
+    AwardBadge,
+} from '@/components/admin/score-recap/award-badge';
 import { LockedFile } from '@/components/submissions/locked-file';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,6 +54,13 @@ export type DashboardSubmission = {
     statementOriginalName: string | null;
     statementUrl: string | null;
     pitching: PitchingSchedule | null;
+    notSelected: boolean;
+    awardingNight: AwardingNight | null;
+    award: Award | null;
+};
+
+export type AwardingNight = {
+    details: string | null;
 };
 
 export type PitchingSchedule = {
@@ -369,7 +381,23 @@ function DisqualifiedPanel({
     );
 }
 
-function QualifiedPanel() {
+function QualifiedPanel({ notSelected }: { notSelected: boolean }) {
+    if (notSelected) {
+        return (
+            <div className="flex gap-3 rounded-lg border p-4 text-sm">
+                <CircleCheck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground">
+                        Your submission was not selected as a finalist.
+                    </span>{' '}
+                    Thank you for taking part in the ICS Award 2026. The Top 5
+                    finalists of your category have been announced, and we
+                    appreciate your commitment to sustainability.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className="flex gap-3 rounded-lg border border-brand/40 bg-brand/5 p-4 text-sm">
             <CircleCheck className="mt-0.5 size-4 shrink-0 text-brand" />
@@ -384,11 +412,62 @@ function QualifiedPanel() {
     );
 }
 
-function FinalistPanel({ pitching }: { pitching: PitchingSchedule | null }) {
+function AwardingNightInvitation({
+    awardingNight,
+}: {
+    awardingNight: AwardingNight;
+}) {
+    return (
+        <div className="space-y-1 rounded-md border bg-background p-3">
+            <p className="flex items-center gap-1.5 font-medium">
+                <PartyPopper className="size-4 text-brand" />
+                You are invited to the Awarding Night
+            </p>
+            <p className="text-muted-foreground">
+                The winners of every category are announced at the Awarding
+                Night.{' '}
+                {awardingNight.details
+                    ? awardingNight.details
+                    : 'The date and venue will be shared by email.'}
+            </p>
+        </div>
+    );
+}
+
+function FinalistPanel({
+    pitching,
+    awardingNight,
+    award,
+}: {
+    pitching: PitchingSchedule | null;
+    awardingNight: AwardingNight | null;
+    award: Award | null;
+}) {
+    if (award) {
+        return (
+            <div className="flex gap-3 rounded-lg border border-brand/40 bg-brand/5 p-4 text-sm">
+                <Trophy className="mt-0.5 size-4 shrink-0 text-brand" />
+                <div className="min-w-0 space-y-2">
+                    <AwardBadge award={award} />
+                    <p className="text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                            Congratulations on your award.
+                        </span>{' '}
+                        Thank you for your commitment to sustainability.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex gap-3 rounded-lg border border-brand/40 bg-brand/5 p-4 text-sm">
             <Trophy className="mt-0.5 size-4 shrink-0 text-brand" />
             <div className="min-w-0 space-y-3">
+                {awardingNight && (
+                    <AwardingNightInvitation awardingNight={awardingNight} />
+                )}
+
                 <p className="text-muted-foreground">
                     <span className="font-medium text-foreground">
                         Congratulations, you are a Top 5 finalist.
@@ -469,9 +548,15 @@ function VerificationPanel({
                 />
             );
         case 'qualified':
-            return <QualifiedPanel />;
+            return <QualifiedPanel notSelected={submission.notSelected} />;
         case 'finalist':
-            return <FinalistPanel pitching={submission.pitching} />;
+            return (
+                <FinalistPanel
+                    pitching={submission.pitching}
+                    awardingNight={submission.awardingNight}
+                    award={submission.award}
+                />
+            );
         default:
             return null;
     }

@@ -1,11 +1,11 @@
 // Components
 import { Form, Head } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toastFormErrors } from '@/lib/form-errors';
 import { login } from '@/routes';
 import { email } from '@/routes/password';
 
@@ -21,7 +21,10 @@ export default function ForgotPassword({ status }: { status?: string }) {
             )}
 
             <div className="space-y-6">
-                <Form {...email.form()}>
+                <Form
+                    {...email.form()}
+                    onError={(errors) => toastFormErrors(errors)}
+                >
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
@@ -33,9 +36,8 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                     autoComplete="off"
                                     autoFocus
                                     placeholder="email@example.com"
+                                    aria-invalid={Boolean(errors.email)}
                                 />
-
-                                <InputError message={errors.email} />
                             </div>
 
                             <div className="my-6 flex items-center justify-start">

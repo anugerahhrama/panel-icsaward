@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -68,7 +69,9 @@ test('superadmins create verified admin accounts that can sign in', function (st
     expect($account->role)->toBe(UserRole::from($role))
         ->and($account->email_verified_at)->not->toBeNull()
         ->and($account->position)->toBe('Marketing')
-        ->and(Hash::check('Str0ng!Password', $account->password))->toBeTrue();
+        ->and(Hash::check('Str0ng!Password', $account->password))->toBeTrue()
+        ->and($account->account_password)->toBe('Str0ng!Password')
+        ->and(DB::table('users')->where('id', $account->id)->value('account_password'))->not->toBe('Str0ng!Password');
 })->with(['admin', 'superadmin']);
 
 test('accounts can only be given an admin role', function (string $role) {
@@ -112,14 +115,65 @@ test('updating an account resets the password only when a new one is given', fun
         ->assertRedirect(route('admin.accounts.index'));
 
     expect($account->refresh()->name)->toBe('Rina Panitia')
-        ->and(Hash::check('password', $account->password))->toBeTrue();
+        ->and(Hash::check('password', $account->password))->toBeTrue()
+        ->and($account->account_password)->toBeNull();
 
     $this->actingAs($superadmin)
         ->put(route('admin.accounts.update', $account), validAdminAccount(['password' => 'N3w!Password99', 'password_confirmation' => 'N3w!Password99']))
         ->assertRedirect(route('admin.accounts.index'));
 
-    expect(Hash::check('N3w!Password99', $account->refresh()->password))->toBeTrue();
+    expect(Hash::check('N3w!Password99', $account->refresh()->password))->toBeTrue()
+        ->and($account->account_password)->toBe('N3w!Password99');
+
+    $this->actingAs($superadmin)
+        ->put(route('admin.accounts.update', $account), validAdminAccount(['password' => '', 'password_confirmation' => '']))
+        ->assertRedirect(route('admin.accounts.index'));
+
+    expect($account->refresh()->account_password)->toBe('N3w!Password99');
 });
+
+test('superadmins reveal the stored password of an admin account on demand', function () {
+    $account = User::factory()->admin()->create(['password' => 'Secret-Pass-123']);
+    $account->forceFill(['account_password' => 'Secret-Pass-123'])->save();
+
+    $this->actingAs(User::factory()->superadmin()->create())
+        ->get(route('admin.accounts.index', ['reveal' => $account->id]))
+        ->assertInertia(fn ($page) => $page
+            ->missing('revealedPassword')
+            ->where('accounts', fn ($accounts) => collect($accounts)->firstWhere('id', $account->id)['has_account_password'] === true)
+            ->where('accounts', fn ($accounts) => collect($accounts)->every(fn (array $row): bool => ! array_key_exists('account_password', $row)))
+            ->reloadOnly('revealedPassword', fn ($reload) => $reload
+                ->where('revealedPassword.account_id', $account->id)
+                ->where('revealedPassword.password', 'Secret-Pass-123')));
+});
+
+test('the stored password is discarded once the account owner changes it', function () {
+    $account = User::factory()->admin()->create(['password' => 'Secret-Pass-123']);
+    $account->forceFill(['account_password' => 'Secret-Pass-123'])->save();
+    $account->update(['password' => 'Changed-Pass-456']);
+
+    $this->actingAs(User::factory()->superadmin()->create())
+        ->get(route('admin.accounts.index', ['reveal' => $account->id]))
+        ->assertInertia(fn ($page) => $page
+            ->reloadOnly('revealedPassword', fn ($reload) => $reload
+                ->where('revealedPassword.account_id', $account->id)
+                ->where('revealedPassword.password', null)));
+
+    expect($account->refresh()->account_password)->toBeNull();
+});
+
+test('passwords of deleted, judge or participant accounts are never revealed', function (User $account) {
+    $account->forceFill(['account_password' => 'password'])->save();
+
+    $this->actingAs(User::factory()->superadmin()->create())
+        ->get(route('admin.accounts.index', ['reveal' => $account->id]))
+        ->assertInertia(fn ($page) => $page
+            ->reloadOnly('revealedPassword', fn ($reload) => $reload->where('revealedPassword', null)));
+})->with([
+    'deleted admin' => fn () => User::factory()->admin()->create(['deleted_at' => now()]),
+    'judge' => fn () => User::factory()->judge()->create(),
+    'participant' => fn () => User::factory()->create(),
+]);
 
 test('superadmins cannot change their own role', function () {
     $superadmin = User::factory()->superadmin()->create();

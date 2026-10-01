@@ -19,6 +19,8 @@ type LogoUploadFieldProps = {
     file: File | null;
     onChange: (file: File | null) => void;
     error?: string;
+    /** Mark the field as invalid without rendering the message (shown elsewhere, e.g. a toast). */
+    invalid?: boolean;
     accept?: string;
     hint?: string;
     currentName?: string | null;
@@ -31,6 +33,7 @@ export function LogoUploadField({
     file,
     onChange,
     error,
+    invalid = false,
     accept = 'image/*',
     hint = 'Click to choose an image',
     currentName = null,
@@ -76,7 +79,7 @@ export function LogoUploadField({
                 onChange={(event) => onChange(event.target.files?.[0] ?? null)}
             />
             <Attachment
-                state={error ? 'error' : isEmpty ? 'idle' : 'done'}
+                state={error || invalid ? 'error' : isEmpty ? 'idle' : 'done'}
                 className="w-full max-w-sm"
             >
                 <AttachmentMedia variant={previewUrl ? 'image' : 'icon'}>

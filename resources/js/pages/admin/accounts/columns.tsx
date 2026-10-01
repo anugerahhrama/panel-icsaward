@@ -17,8 +17,14 @@ export type AccountRow = {
     position: string | null;
     phone: string | null;
     role: AdminRole;
+    has_account_password: boolean;
     created_at: string;
     deleted_at: string | null;
+};
+
+export type RevealedPassword = {
+    account_id: number;
+    password: string | null;
 };
 
 const columnHelper = createAppColumnHelper<AccountRow>();
