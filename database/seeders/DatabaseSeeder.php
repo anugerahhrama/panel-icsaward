@@ -7,13 +7,14 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rules\Password;
-use RuntimeException;
 
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
+
+    public const string SUPERADMIN_EMAIL = 'superadmin@app.com';
+
+    public const string SUPERADMIN_PASSWORD = 'Icsa2026!Superadmin';
 
     /**
      * Seed the application's database.
@@ -30,40 +31,22 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * Create the initial superadmin from `config('admin.superadmin')`.
+     * Create the initial superadmin.
      *
-     * An existing account with that email is left untouched, so re-seeding never resets a changed password.
-     * Missing credentials fail the seed in production and only warn elsewhere.
+     * An existing account with this email is left untouched, so re-seeding never resets a changed password.
+     * Change the password from the profile settings after the first login.
      */
     private function seedSuperadmin(): void
     {
-        /** @var array{name: string|null, email: string|null, password: string|null} $config */
-        $config = config('admin.superadmin');
-
-        if (blank($config['email']) || blank($config['password'])) {
-            if (app()->isProduction()) {
-                throw new RuntimeException('Set SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD before seeding the production database.');
-            }
-
-            $this->command->warn('SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD not set: skipped creating the superadmin.');
-
-            return;
-        }
-
-        $superadmin = User::query()->firstOrNew(['email' => $config['email']]);
+        $superadmin = User::query()->firstOrNew(['email' => self::SUPERADMIN_EMAIL]);
 
         if ($superadmin->exists) {
             return;
         }
 
-        Validator::make($config, [
-            'email' => ['required', 'email'],
-            'password' => ['required', Password::defaults()],
-        ])->validate();
-
         $superadmin->forceFill([
-            'name' => filled($config['name']) ? $config['name'] : 'Superadmin',
-            'password' => Hash::make($config['password']),
+            'name' => 'Superadmin',
+            'password' => Hash::make(self::SUPERADMIN_PASSWORD),
             'role' => UserRole::Superadmin,
             'position' => 'Superadmin',
             'email_verified_at' => now(),

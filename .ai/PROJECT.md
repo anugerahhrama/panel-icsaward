@@ -114,16 +114,16 @@ Semua fitur milestone ✅ dan QA browser lokal lolos (2026-10-01). Tidak ada fit
 
 Urutan untuk server produksi (DB baru maupun DB lama yang di-upgrade). Semua perintah `artisan` di produksi butuh `--force`.
 
-1. **Env** — `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` (HTTPS), `ADMIN_PANEL_PREFIX` (nilai privat), `SUPERADMIN_EMAIL` + `SUPERADMIN_PASSWORD` (min 12, huruf besar/kecil, angka, simbol, tidak bocor — dicek `Password::defaults()`; tanpa ini `db:seed` gagal), mail (`MAIL_*`), queue, disk/S3 (`AWS_*` bila dipakai), `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` + daftarkan `<APP_URL>/auth/google/callback` di Google Cloud Console.
+1. **Env** — `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` (HTTPS), `ADMIN_PANEL_PREFIX` (nilai privat), mail (`MAIL_*`), queue, disk/S3 (`AWS_*` bila dipakai), `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` + daftarkan `<APP_URL>/auth/google/callback` di Google Cloud Console.
 2. **Build** — `composer install --no-dev --optimize-autoloader`, `npm ci && npm run build` (SSR mati, `build:ssr` tidak perlu).
 3. **Database** — `php artisan migrate --force`.
-4. **Seed** — `php artisan db:seed --force` (Setting default + kategori + template penilaian + superadmin dari env; aman diulang, superadmin yang sudah ada tidak disentuh).
+4. **Seed** — `php artisan db:seed --force` (Setting default + kategori + template penilaian + superadmin `superadmin@app.com` dari konstanta `DatabaseSeeder`; aman diulang, superadmin yang sudah ada tidak disentuh).
     - DB lama yang di-upgrade: `php artisan db:seed --class=DeckScheduleSeeder --force` untuk menimpa jadwal dengan nilai deck (rename kategori #20 & deskripsi sudah ikut `AwardCategorySeeder` di langkah 4; template email baru ikut `SettingSeeder`).
 5. **Storage** — `php artisan storage:link` (template unduhan di disk `public`).
 6. **Queue** — `php artisan queue:work` dijalankan supervisor (email konfirmasi, verifikasi, pengumuman hanya terkirim lewat queue).
 7. **Cache** — `php artisan config:cache && php artisan route:cache && php artisan view:cache` (ulang tiap ganti env).
 8. **Konten di Admin** (login superadmin) — Settings → Files & Terms: ganti T&C `[Placeholder]` organisasi & individu, unggah Statement Letter; Categories: unggah template paper 20 kategori; konfirmasi `contact_email` ke tim; cek jadwal di Settings → Registration & Deadlines.
-9. **Smoke test** — `/login`, Sign Up sampai email konfirmasi masuk, login superadmin di `/<ADMIN_PANEL_PREFIX>`, lalu ganti password superadmin bila perlu.
+9. **Smoke test** — `/login`, Sign Up sampai email konfirmasi masuk, login superadmin di `/<ADMIN_PANEL_PREFIX>`, lalu **wajib** ganti password superadmin (default tercantum di repo).
 
 ## Known issues
 
