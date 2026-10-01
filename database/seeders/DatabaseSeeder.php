@@ -12,9 +12,9 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    public const string SUPERADMIN_EMAIL = 'superadmin@app.com';
+    public const string SUPERADMIN_EMAIL = 'Sadmin0@icsa.com';
 
-    public const string SUPERADMIN_PASSWORD = 'Icsa2026!Superadmin';
+    public const string SUPERADMIN_PASSWORD = 'ueRAnis-aY!o{Z8R';
 
     /**
      * Seed the application's database.
