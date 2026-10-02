@@ -1,0 +1,129 @@
+# Di-generate oleh laravel-deploy-kit/install.php — boleh diedit manual.
+
+# Anchor bersama untuk app / worker / scheduler (image & env sama).
+x-app-base: &app-base
+    image: regis-icsa2026:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+        - .env
+    volumes:
+        - regis-icsa2026-storage:/app/storage
+    logging:
+        driver: json-file
+        options:
+            max-size: '10m'
+            max-file: '3'
+
+services:
+    app:
+        <<: *app-base
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: runtime
+        container_name: regis-icsa2026-app
+        environment:
+            # Traefik pegang TLS; Caddy jangan coba automatic HTTPS.
+            SERVER_NAME: ':80'
+            CONTAINER_ROLE: app
+        networks:
+            - traefik-public
+            - regis-icsa2026-internal
+        depends_on:
+            db:
+                condition: service_healthy
+        healthcheck:
+            test: ['CMD', 'wget', '-qO-', 'http://localhost/up']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 20s
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=traefik-public'
+            - 'traefik.http.routers.regis-icsa2026.rule=Host(`${APP_DOMAIN}`)'
+            - 'traefik.http.routers.regis-icsa2026.entrypoints=websecure'
+            - 'traefik.http.routers.regis-icsa2026.tls.certresolver=myresolver'
+            - 'traefik.http.services.regis-icsa2026.loadbalancer.server.port=80'
+        deploy:
+            resources:
+                limits:
+                    cpus: '1.0'
+                    memory: 512M
+                reservations:
+                    memory: 256M
+
+    # Queue worker — proyek ini punya class ShouldQueue.
+    worker:
+        <<: *app-base
+        container_name: regis-icsa2026-worker
+        command:
+            [
+                'php',
+                'artisan',
+                'queue:work',
+                '--sleep=3',
+                '--tries=3',
+                '--max-time=3600',
+            ]
+        environment:
+            CONTAINER_ROLE: worker
+        networks:
+            - regis-icsa2026-internal
+        depends_on:
+            app:
+                condition: service_healthy
+        stop_grace_period: 60s
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.5'
+                    memory: 256M
+
+    db:
+        image: mysql:8.4
+        container_name: regis-icsa2026-db
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: '${DB_DATABASE}'
+            MYSQL_USER: '${DB_USERNAME}'
+            MYSQL_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_ROOT_PASSWORD: '${DB_ROOT_PASSWORD}'
+        volumes:
+            - regis-icsa2026-db-data:/var/lib/mysql
+        networks:
+            - regis-icsa2026-internal
+        # Tidak ada "ports:" — hanya bisa diakses lewat network internal.
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent',
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+        logging:
+            driver: json-file
+            options:
+                max-size: '10m'
+                max-file: '3'
+        deploy:
+            resources:
+                limits:
+                    cpus: '1.0'
+                    memory: 512M
+                reservations:
+                    memory: 256M
+
+volumes:
+    regis-icsa2026-db-data:
+        name: regis-icsa2026-db-data
+    regis-icsa2026-storage:
+        name: regis-icsa2026-storage
+
+networks:
+    traefik-public:
+        external: true
+    regis-icsa2026-internal:
+        external: true

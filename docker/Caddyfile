@@ -1,0 +1,14 @@
+{$SERVER_NAME:localhost}
+
+root * /app/public
+encode zstd br gzip
+
+route {
+	try_files {path} /index.php
+	php_server
+}
+
+log {
+	output stdout
+	format json
+}
