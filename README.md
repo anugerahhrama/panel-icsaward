@@ -89,14 +89,11 @@ CI berjalan lewat GitHub Actions ([`.github/workflows/tests.yml`](.github/workfl
 
 ## Deploy
 
-Checklist setelah deploy produksi:
+Deploy ke VPS via **Docker Compose + Traefik**: container `app` (FrankenPHP), `worker` (queue email), dan `db` (MySQL 8.4). Migration, cache, dan `storage:link` jalan otomatis saat container start; rilis cukup `git tag vX.Y.Z && git push origin vX.Y.Z` (GitHub Actions → `scripts/deploy.sh`).
 
-1. `php artisan migrate --force`
-2. `php artisan storage:link` (sekali)
-3. Seeder data sesuai kebutuhan: `AwardCategorySeeder` → `AssessmentTemplateSeeder` → `DeckScheduleSeeder`
-4. Pastikan worker `php artisan queue:work` berjalan (supervisor/daemon)
-5. Set `ADMIN_PANEL_PREFIX` privat, kredensial `MAIL_*` dan `GOOGLE_*`
-6. Ganti password akun superadmin seeder, atau buat superadmin baru lewat **Admin Accounts** lalu hapus akun seeder
+Panduan lengkap (setup awal, env wajib, seeder, rilis, rollback, backup, troubleshooting): [docs/deployment/deployment.md](docs/deployment/deployment.md). Standar compose organisasi: [docs/deployment/standar-docker-compose.md](docs/deployment/standar-docker-compose.md).
+
+Setelah deploy pertama: `docker compose exec app php artisan db:seed --force`, lalu **ganti password akun superadmin seeder** (atau buat superadmin baru lewat **Admin Accounts** dan hapus akun seeder).
 
 ## Struktur singkat
 

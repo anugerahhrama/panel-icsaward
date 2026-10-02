@@ -1,0 +1,35 @@
+name: 🚀 Production
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch / tag yang di-deploy'
+        default: 'main'
+        required: true
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Buat environment "production" di Settings → Environments untuk
+    # required reviewers (approval manual) & secrets khusus production.
+    environment: production
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script_stop: true
+          command_timeout: 30m
+          script: |
+            cd ${{ secrets.WORK_DIR }}
+            DEPLOY_REF=${{ inputs.ref || github.ref_name }} bash scripts/deploy.sh

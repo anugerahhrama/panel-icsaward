@@ -24,6 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Production runs behind Traefik on an internal Docker network
+        // (docs/deployment/deployment.md) — trust it so Request::secure(),
+        // url(), and client IPs resolve from the X-Forwarded-* headers.
+        $middleware->trustProxies(at: '*');
+
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->alias([
