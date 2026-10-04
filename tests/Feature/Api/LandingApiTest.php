@@ -44,7 +44,7 @@ test('categories are listed in display order', function () {
         ]]);
 });
 
-test('only judges shown on the landing page are listed, without account or assignment data', function () {
+test('only judges shown on the landing page are listed, without account or recusal data', function () {
     Storage::fake(Judge::PHOTO_DISK);
     $category = AwardCategory::factory()->create();
     $judge = Judge::factory()->withAccount()->assignedTo([$category->id], recused: true)->create([
@@ -70,8 +70,25 @@ test('only judges shown on the landing page are listed, without account or assig
         'bio' => 'Bio.',
         'photo_url' => url('storage/judges/jane.webp'),
         'landing_category_id' => $category->id,
+        'landing_category_ids' => [],
         'sort_order' => 3,
     ]]]);
+});
+
+test('each judge is listed once with every category they actively judge', function () {
+    [$energy, $leader, $recusedFrom] = AwardCategory::factory()->count(3)->create();
+    $judge = Judge::factory()->assignedTo([$energy->id, $leader->id])->assignedTo([$recusedFrom->id], recused: true)
+        ->create(['show_on_landing' => true, 'landing_category_id' => $energy->id, 'sort_order' => 1]);
+    $unassigned = Judge::factory()->create(['show_on_landing' => true, 'sort_order' => 2]);
+
+    $response = $this->withToken(LANDING_API_TOKEN)->getJson(route('api.v1.landing.judges'));
+
+    expect($response->json('data'))->toHaveCount(2)
+        ->and($response->json('data.0.id'))->toBe($judge->id)
+        ->and($response->json('data.0.landing_category_id'))->toBe($energy->id)
+        ->and($response->json('data.0.landing_category_ids'))->toEqualCanonicalizing([$energy->id, $leader->id])
+        ->and($response->json('data.1.id'))->toBe($unassigned->id)
+        ->and($response->json('data.1.landing_category_ids'))->toBe([]);
 });
 
 test('stats count every registration, including disqualified ones, per category', function () {
