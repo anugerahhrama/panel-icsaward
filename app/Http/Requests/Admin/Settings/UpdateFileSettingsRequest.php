@@ -21,7 +21,7 @@ class UpdateFileSettingsRequest extends FormRequest
      *
      * @var list<string>
      */
-    public const array TEMPLATE_EXTENSIONS = ['pdf', 'doc', 'docx'];
+    public const array TEMPLATE_EXTENSIONS = ['pdf', 'doc', 'docx', 'pptx'];
 
     /**
      * Determine if the user is authorized to make this request.

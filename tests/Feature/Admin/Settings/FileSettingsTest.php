@@ -94,13 +94,13 @@ test('a template can be removed', function () {
     Storage::disk('public')->assertMissing('settings/letter.pdf');
 });
 
-test('templates must be PDF or Word files', function () {
+test('templates must be PDF, Word, or PowerPoint files', function () {
     $this->actingAs(User::factory()->admin()->create())
         ->post(route('admin.settings.files.update'), fileSettingsPayload([
             'submission_template' => UploadedFile::fake()->create('template.exe', 10),
         ]))
         ->assertSessionHasErrors([
-            'submission_template' => 'The submission paper template field must be a file of type: pdf, doc, docx.',
+            'submission_template' => 'The submission paper template field must be a file of type: pdf, doc, docx, pptx.',
         ]);
 
     expect(Setting::get('submission_template_path'))->toBeNull()

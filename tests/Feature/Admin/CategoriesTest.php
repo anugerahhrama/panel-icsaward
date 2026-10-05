@@ -124,18 +124,18 @@ test('admins can upload a paper template when creating a category', function () 
     Storage::fake('public');
 
     $this->actingAs(User::factory()->admin()->create())
-        ->post(route('admin.categories.store'), [...validCategory(), 'paper_template' => UploadedFile::fake()->create('Community Template.docx', 100)])
+        ->post(route('admin.categories.store'), [...validCategory(), 'paper_template' => UploadedFile::fake()->create('Community Template.pptx', 100)])
         ->assertRedirect(route('admin.categories.index'))
         ->assertSessionHasNoErrors();
 
     $category = AwardCategory::sole();
 
-    expect($category->paper_template_name)->toBe('Community Template.docx');
+    expect($category->paper_template_name)->toBe('Community Template.pptx');
     Storage::disk('public')->assertExists($category->paper_template_path);
 
     $this->get(route('admin.categories.index'))
         ->assertInertia(fn ($page) => $page
-            ->where('categories.0.paper_template_name', 'Community Template.docx')
+            ->where('categories.0.paper_template_name', 'Community Template.pptx')
             ->where('categories.0.paper_template_url', Storage::disk('public')->url($category->paper_template_path))
             ->missing('categories.0.paper_template_path'));
 });
@@ -172,13 +172,13 @@ test('admins can remove a paper template so the default one is used', function (
     Storage::disk('public')->assertMissing($path);
 });
 
-test('paper templates must be a PDF or Word file', function () {
+test('paper templates must be a PDF, Word, or PowerPoint file', function () {
     Storage::fake('public');
 
     $this->actingAs(User::factory()->admin()->create())
         ->post(route('admin.categories.store'), [...validCategory(), 'paper_template' => UploadedFile::fake()->create('template.exe', 10)])
         ->assertSessionHasErrors([
-            'paper_template' => 'The paper template field must be a file of type: pdf, doc, docx.',
+            'paper_template' => 'The paper template field must be a file of type: pdf, doc, docx, pptx.',
         ]);
 
     expect(AwardCategory::count())->toBe(0)

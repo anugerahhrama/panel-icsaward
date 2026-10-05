@@ -105,7 +105,7 @@ export default function FileSettings({
 
                 <SettingsSection
                     title="Templates"
-                    description="Participants download these from the upload page and their dashboard. The default paper template is used for categories without their own paper template. PDF or Word, max 10 MB."
+                    description="Participants download these from the upload page and their dashboard. The default paper template is used for categories without their own paper template. PDF, Word, or PowerPoint, max 10 MB."
                     defaultOpen
                 >
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -113,8 +113,8 @@ export default function FileSettings({
                             <LogoUploadField
                                 key={key}
                                 label={label}
-                                accept=".pdf,.doc,.docx"
-                                hint="Click to choose a PDF or Word file"
+                                accept=".pdf,.doc,.docx,.pptx"
+                                hint="Click to choose a PDF, Word, or PowerPoint file"
                                 currentUrl={
                                     form.data[`remove_${key}`]
                                         ? null
