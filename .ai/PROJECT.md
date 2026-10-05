@@ -67,13 +67,14 @@ Status: ✅ selesai · 🚧 berjalan · ⬜ belum
 - ✅ Persiapan produksi (seeder tanpa data dummy, superadmin dari env, SSR off, checklist deploy)
 - ✅ QA manual browser (bundel) — semua item `Uji manual …` lokal lolos; bug Save Email Templates diperbaiki
 - ✅ Landing API: `landing_category_ids` di endpoint judges (disisipkan 2026-10-05, permintaan repo Landing)
+- ✅ Template paper boleh PPTX (disisipkan 2026-10-05, revisi tim marketing)
 
 ### 🚧 Next up: Deploy produksi + QA staging
 
 Semua fitur milestone ✅ dan QA browser lokal lolos (2026-10-01). Tidak ada fitur mayor tersisa (keputusan user 2026-10-01: cukup dulu); sisanya Backlog opsional. Sesi berikutnya hanya saat siap go-live:
 
 - Jalankan **Checklist deploy produksi** di bawah (env, build, migrate, seed, `storage:link`, queue, cache, konten admin, smoke test).
-- Uji yang butuh staging: Login via Google (kredensial asli), Office Online viewer PPTX/DOCX, upload PPTX asli (deteksi MIME).
+- Uji yang butuh staging: Login via Google (kredensial asli), Office Online viewer PPTX/DOCX, upload PPTX asli (deteksi MIME) — paper peserta **dan** template paper admin.
 - Bug yang ditemukan → Backlog/Known issues; perbaikan kecil boleh di sesi itu.
 
 ## Backlog
@@ -182,3 +183,4 @@ Urutan untuk server produksi (DB baru maupun DB lama yang di-upgrade). Semua per
 | 2026-10-01 | QA manual browser (bundel)           | Playwright di server QA terisolasi (DB `regis_icsa2026_qa`, port 8002, mailer `log`, cookie sesi terpisah): Admin Accounts, detail peserta, preview email, Judges + lock + alur juri + preview dokumen, Score Recap → finalis (seri rank 5) → pitching → Stage 2 → Final/award → Announcements (15 email di log), Overview, branding, toast, Landing API — semua lolos. Bug: Save di Settings → Email Templates gagal diam-diam (section tertutup tidak ter-mount → field tak terkirim, error tersembunyi) → `SettingsSection` `forceMount` + `data-[state=closed]:hidden`; 2 temuan kosmetik → Backlog; `ci:check` hijau (447 test)                                                                                                                      |
 | 2026-10-02 | Deployment production (Docker)       | Standar deployment `sf360-2026` via `laravel-deploy-kit`: `Dockerfile` (FrankenPHP PHP 8.4 + `gd`/`zip`/`pdo_mysql`), `docker-compose.yml` (`app`, `worker`, `db` MySQL 8.4, label Traefik, resource limit), `docker/php.ini` (upload 100 MB = maks. `paper_max_size_mb`), `docker/entrypoint.sh`, `scripts/deploy.sh` (tag git hash, backup sebelum migrate, `queue:restart`, rollback), `scripts/backup-db.sh` (mysqldump), workflow `production.yml`, `.env.production.example` (SMTP, Google, `ADMIN_PANEL_PREFIX`), `docs/deployment/`. Kode: `trustProxies(at: '*')` (+ `TrustedProxyTest`). MySQL dipilih karena rule `database.md` + raw SQL skor (lihat Known issues).                                                                           |
 | 2026-10-05 | Landing API `landing_category_ids`   | Endpoint `judges` kini mengirim `landing_category_ids` = id kategori `category_judges` yang tidak recused (eager load ber-constraint, tanpa migrasi; keputusan user: opsi A, penugasan boleh publik tanpa info recusal); `landing_category_id` tetap dari kolom lama; kontrak `ASSESSMENT-BRIEF.md` + rule API Landing diperbarui; perlu deploy lalu Sync now di Landing; `ci:check` hijau (447 test)                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-10-05 | Template paper boleh PPTX            | `UpdateFileSettingsRequest::TEMPLATE_EXTENSIONS` + `pptx` (dipakai template global, statement letter, dan template per kategori); `accept` + copy di Settings → Files & Category form; test pesan validasi diperbarui, upload template kategori diuji dengan `.pptx`; revisi landing (booklet PDF, slot foto past winner) dikerjakan user di repo Landing; `ci:check` hijau (447 test) |

@@ -180,8 +180,8 @@ export function CategoryForm({
             <div className="grid gap-2">
                 <LogoUploadField
                     label="Paper template"
-                    accept=".pdf,.doc,.docx"
-                    hint="Click to choose a PDF or Word file"
+                    accept=".pdf,.doc,.docx,.pptx"
+                    hint="Click to choose a PDF, Word, or PowerPoint file"
                     currentUrl={
                         data.remove_paper_template
                             ? null
