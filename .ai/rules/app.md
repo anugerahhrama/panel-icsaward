@@ -58,7 +58,7 @@ Fortify `home` tetap `/dashboard`. `DashboardController` me-redirect superadmin/
 
 ## Jadwal tahap `timeline_*` = teks tampilan, bukan tanggal
 
-`timeline_administrative_selection`, `timeline_desk_evaluation`, `timeline_finalists_announcement`, `timeline_pitching`, `timeline_awarding_night` berisi teks bebas ("12 – 30 October 2026") untuk panel "What's next", jadi tidak lewat `Setting::endOfDay()`. Jangan dipakai untuk logika buka/tutup tahap — itu tugas `judging_stage` dan key tanggal `YYYY-MM-DD`. Judul & deskripsi tahap ada di `DashboardController::TIMELINE`. (Dashboard peserta, 2026-09-29.)
+`timeline_administrative_selection`, `timeline_desk_evaluation`, `timeline_finalists_announcement`, `timeline_pitching`, `timeline_awarding_night` berisi teks bebas ("12 – 30 October 2026") untuk panel "What's next", jadi tidak lewat `Setting::endOfDay()`. Jangan dipakai untuk logika buka/tutup tahap — itu tugas `judging_stage` dan key tanggal `YYYY-MM-DD`. Tahap, key setting, dan teks default ada di enum `App\Enums\TimelineStage`. Judul & deskripsi bisa diedit panitia (`timeline_<tahap>_title` / `_description`); kosong → teks default enum. Panel di dashboard & halaman submission sama-sama memakai `TimelineStage::forParticipants()`, jadi jangan hardcode tahap di frontend. (Dashboard peserta, 2026-09-29; narasi bisa diedit, 2026-10-06.)
 
 ## File peserta diunduh lewat `SubmissionFileController` + ability `downloadFiles`, bukan URL disk
 

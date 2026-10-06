@@ -19,6 +19,9 @@ function validRegistrationSettings(): array
         'timeline_finalists_announcement' => '3 – 5 November 2026',
         'timeline_pitching' => '7 – 11 November 2026',
         'timeline_awarding_night' => '',
+        'timeline_desk_evaluation_title' => 'Penilaian dewan juri',
+        'timeline_desk_evaluation_description' => 'Dewan juri menilai paper Anda.',
+        'timeline_pitching_title' => '',
     ];
 }
 
@@ -40,7 +43,10 @@ test('admins see the current registration settings', function () {
             ->component('admin/settings/registration')
             ->where('settings.is_registration_open', true)
             ->where('settings.paper_deadline', '2026-10-19')
-            ->where('settings.timeline_pitching', null));
+            ->where('settings.timeline_pitching', null)
+            ->has('timelineStages', 5)
+            ->where('timelineStages.3.titleKey', 'timeline_pitching_title')
+            ->where('timelineStages.3.defaultTitle', 'Pitching session'));
 });
 
 test('admins can update registration settings', function () {
@@ -54,7 +60,19 @@ test('admins can update registration settings', function () {
         ->and(Setting::get('paper_deadline'))->toBe('2026-10-21')
         ->and(Setting::get('max_registrations_per_user'))->toBe('2')
         ->and(Setting::get('timeline_desk_evaluation'))->toBe('13 – 31 October 2026')
-        ->and(Setting::get('timeline_awarding_night'))->toBeNull();
+        ->and(Setting::get('timeline_awarding_night'))->toBeNull()
+        ->and(Setting::get('timeline_desk_evaluation_title'))->toBe('Penilaian dewan juri')
+        ->and(Setting::get('timeline_desk_evaluation_description'))->toBe('Dewan juri menilai paper Anda.')
+        ->and(Setting::get('timeline_pitching_title'))->toBeNull();
+});
+
+test('timeline descriptions are limited to 500 characters', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->put(route('admin.settings.registration.update'), [
+            ...validRegistrationSettings(),
+            'timeline_pitching_description' => str_repeat('a', 501),
+        ])
+        ->assertSessionHasErrors(['timeline_pitching_description' => 'The Pitching session description field must not be greater than 500 characters.']);
 });
 
 test('an unchecked registration toggle closes registration', function () {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Announcement;
 use App\Enums\SubmissionStatus;
+use App\Enums\TimelineStage;
 use App\Enums\UserRole;
 use App\Models\Setting;
 use App\Models\Submission;
@@ -14,34 +15,6 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    /**
-     * Competition stages shown in the participant "What's next" panel; dates are display text from settings.
-     *
-     * @var array<string, array{title: string, description: string}>
-     */
-    private const array TIMELINE = [
-        'timeline_administrative_selection' => [
-            'title' => 'Administrative selection',
-            'description' => 'The committee checks your documents for completeness. Your status becomes Qualified or Needs Revision.',
-        ],
-        'timeline_desk_evaluation' => [
-            'title' => 'Desk evaluation',
-            'description' => 'Qualified submissions are scored by the Board of Judges in your category.',
-        ],
-        'timeline_finalists_announcement' => [
-            'title' => 'Top 5 finalists announced',
-            'description' => 'We will contact finalists by email and on this dashboard.',
-        ],
-        'timeline_pitching' => [
-            'title' => 'Pitching session',
-            'description' => 'Finalists present their initiative to the judges.',
-        ],
-        'timeline_awarding_night' => [
-            'title' => 'Awarding Night',
-            'description' => 'Winners are announced at the Awarding Night.',
-        ],
-    ];
-
     /**
      * Show the participant dashboard, or send staff to their own area.
      */
@@ -99,12 +72,7 @@ class DashboardController extends Controller
             'isClosed' => $deadline !== null && now()->greaterThan($deadline),
             'statementLetterTemplateUrl' => Setting::publicFileUrl('statement_letter_template_path'),
             'contactEmail' => Setting::get('contact_email'),
-            'timeline' => collect(self::TIMELINE)
-                ->map(fn (array $stage, string $key): array => [
-                    ...$stage,
-                    'date' => Setting::get($key) ?: null,
-                ])
-                ->values(),
+            'timeline' => TimelineStage::forParticipants(),
         ]);
     }
 
