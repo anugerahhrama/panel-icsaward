@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TimelineStage;
 use App\Http\Requests\StorePaperRequest;
 use App\Models\Setting;
 use App\Models\Submission;
@@ -60,6 +61,7 @@ class SubmissionController extends Controller
             'isClosed' => $deadline !== null && now()->greaterThan($deadline),
             'statementLetterTemplateUrl' => Setting::publicFileUrl('statement_letter_template_path'),
             'contactEmail' => Setting::get('contact_email'),
+            'timeline' => TimelineStage::forParticipants(),
         ]);
     }
 }

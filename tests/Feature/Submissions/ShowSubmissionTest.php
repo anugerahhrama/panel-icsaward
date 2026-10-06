@@ -62,6 +62,17 @@ test('the upload requirements and deadline come from the settings', function () 
         ->assertInertia(fn (Assert $page) => $page->where('isClosed', true));
 });
 
+test('the submission page shows the committee timeline', function () {
+    Setting::put('timeline_awarding_night_description', 'Pemenang diumumkan di Awarding Night.');
+    $submission = Submission::factory()->create();
+
+    $this->actingAs($submission->user)
+        ->get(route('submissions.show', $submission))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('timeline', 5)
+            ->where('timeline.4.description', 'Pemenang diumumkan di Awarding Night.'));
+});
+
 test('the submission page reopens the upload while a revision is open', function () {
     $submission = Submission::factory()->needsRevision()->create(['revision_deadline' => now()->addDay()]);
 

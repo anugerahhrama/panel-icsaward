@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Settings;
 
+use App\Enums\TimelineStage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Settings\UpdateRegistrationSettingsRequest;
 use App\Models\Setting;
@@ -13,15 +14,20 @@ use Inertia\Response;
 class RegistrationSettingsController extends Controller
 {
     /**
-     * @var list<string>
+     * The settings this page reads and writes, besides the registration toggle.
+     *
+     * @return list<string>
      */
-    private const array KEYS = [
-        'registration_opens_at',
-        'registration_deadline',
-        'paper_deadline',
-        'max_registrations_per_user',
-        ...UpdateRegistrationSettingsRequest::TIMELINE_KEYS,
-    ];
+    private function keys(): array
+    {
+        return [
+            'registration_opens_at',
+            'registration_deadline',
+            'paper_deadline',
+            'max_registrations_per_user',
+            ...TimelineStage::settingKeys(),
+        ];
+    }
 
     /**
      * Show the registration & deadlines settings.
@@ -30,9 +36,10 @@ class RegistrationSettingsController extends Controller
     {
         return Inertia::render('admin/settings/registration', [
             'settings' => [
-                ...Setting::many(self::KEYS),
+                ...Setting::many($this->keys()),
                 'is_registration_open' => Setting::get('is_registration_open', '1') === '1',
             ],
+            'timelineStages' => TimelineStage::forSettingsForm(),
         ]);
     }
 
@@ -44,7 +51,7 @@ class RegistrationSettingsController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($request, $validated): void {
-            foreach (self::KEYS as $key) {
+            foreach ($this->keys() as $key) {
                 $value = $validated[$key] ?? null;
 
                 Setting::put($key, $value === null ? null : (string) $value);

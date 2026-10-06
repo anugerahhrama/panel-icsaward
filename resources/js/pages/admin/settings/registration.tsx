@@ -7,25 +7,28 @@ import InputError from '@/components/input-error';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { dashboard } from '@/routes/admin';
 import { edit } from '@/routes/admin/settings/registration';
 
-type TimelineKey =
-    | 'timeline_administrative_selection'
-    | 'timeline_desk_evaluation'
-    | 'timeline_finalists_announcement'
-    | 'timeline_pitching'
-    | 'timeline_awarding_night';
+type TimelineStage = {
+    dateKey: string;
+    titleKey: string;
+    descriptionKey: string;
+    defaultTitle: string;
+    defaultDescription: string;
+};
 
 type Props = {
     settings: Record<
         | 'registration_opens_at'
         | 'registration_deadline'
         | 'paper_deadline'
-        | 'max_registrations_per_user'
-        | TimelineKey,
+        | 'max_registrations_per_user',
         string | null
-    > & { is_registration_open: boolean };
+    > &
+        Record<string, string | null> & { is_registration_open: boolean };
+    timelineStages: TimelineStage[];
 };
 
 const dateFields = [
@@ -46,21 +49,10 @@ const dateFields = [
     },
 ] as const;
 
-const timelineFields: { name: TimelineKey; label: string }[] = [
-    {
-        name: 'timeline_administrative_selection',
-        label: 'Administrative Selection',
-    },
-    { name: 'timeline_desk_evaluation', label: 'Desk Evaluation' },
-    {
-        name: 'timeline_finalists_announcement',
-        label: 'Top 5 Finalists Announcement',
-    },
-    { name: 'timeline_pitching', label: 'Pitching' },
-    { name: 'timeline_awarding_night', label: 'Awarding Night' },
-];
-
-export default function RegistrationSettings({ settings }: Props) {
+export default function RegistrationSettings({
+    settings,
+    timelineStages,
+}: Props) {
     return (
         <>
             <Head title="Registration & Deadlines" />
@@ -156,32 +148,80 @@ export default function RegistrationSettings({ settings }: Props) {
 
                         <SettingsSection
                             title="Competition timeline"
-                            description={`Display text for the "What's next" panel, e.g. "12 – 30 October 2026". Not used to open or close stages.`}
+                            description={`Text for the "What's next" panel on the participant dashboard. Dates are display text, e.g. "12 – 30 October 2026", and do not open or close stages. Leave a title or description empty to use the default text.`}
                             defaultOpen
                         >
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                {timelineFields.map((field) => (
-                                    <div
-                                        key={field.name}
-                                        className="grid gap-2"
-                                    >
-                                        <Label htmlFor={field.name}>
-                                            {field.label}
+                            {timelineStages.map((stage, index) => (
+                                <fieldset
+                                    key={stage.dateKey}
+                                    className="grid gap-4 rounded-lg border p-4"
+                                >
+                                    <legend className="px-1 text-sm font-medium">
+                                        Stage {index + 1}
+                                    </legend>
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor={stage.titleKey}>
+                                                Title
+                                            </Label>
+                                            <Input
+                                                id={stage.titleKey}
+                                                name={stage.titleKey}
+                                                maxLength={100}
+                                                placeholder={stage.defaultTitle}
+                                                defaultValue={
+                                                    settings[stage.titleKey] ??
+                                                    stage.defaultTitle
+                                                }
+                                            />
+                                            <InputError
+                                                message={errors[stage.titleKey]}
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor={stage.dateKey}>
+                                                Date
+                                            </Label>
+                                            <Input
+                                                id={stage.dateKey}
+                                                name={stage.dateKey}
+                                                maxLength={255}
+                                                defaultValue={
+                                                    settings[stage.dateKey] ??
+                                                    ''
+                                                }
+                                            />
+                                            <InputError
+                                                message={errors[stage.dateKey]}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor={stage.descriptionKey}>
+                                            Description
                                         </Label>
-                                        <Input
-                                            id={field.name}
-                                            name={field.name}
-                                            maxLength={255}
+                                        <Textarea
+                                            id={stage.descriptionKey}
+                                            name={stage.descriptionKey}
+                                            rows={2}
+                                            maxLength={500}
+                                            placeholder={
+                                                stage.defaultDescription
+                                            }
                                             defaultValue={
-                                                settings[field.name] ?? ''
+                                                settings[
+                                                    stage.descriptionKey
+                                                ] ?? stage.defaultDescription
                                             }
                                         />
                                         <InputError
-                                            message={errors[field.name]}
+                                            message={
+                                                errors[stage.descriptionKey]
+                                            }
                                         />
                                     </div>
-                                ))}
-                            </div>
+                                </fieldset>
+                            ))}
                         </SettingsSection>
 
                         <SaveButton processing={processing} />

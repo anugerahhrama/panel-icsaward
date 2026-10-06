@@ -63,6 +63,20 @@ test('the deadline and timeline dates come from the settings', function () {
             ->where('timeline.4.date', null));
 });
 
+test('the timeline uses the committee text and falls back to the default copy', function () {
+    Setting::put('timeline_desk_evaluation_title', 'Penilaian dewan juri');
+    Setting::put('timeline_desk_evaluation_description', 'Dewan juri menilai paper Anda.');
+    Setting::put('timeline_pitching_title', '');
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('timeline.1.title', 'Penilaian dewan juri')
+            ->where('timeline.1.description', 'Dewan juri menilai paper Anda.')
+            ->where('timeline.3.title', 'Pitching session')
+            ->where('timeline.3.description', 'Finalists present their initiative to the judges.'));
+});
+
 test('participants see the committee revision note and deadline', function () {
     $submission = Submission::factory()->paperSubmitted()->create([
         'status' => SubmissionStatus::NeedsRevision,

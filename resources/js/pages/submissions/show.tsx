@@ -7,6 +7,7 @@ import { LockedFile } from '@/components/submissions/locked-file';
 import { STATUS_LABELS } from '@/components/submissions/submission-status-card';
 import type { SubmissionStatus } from '@/components/submissions/submission-status-card';
 import { WhatsNext } from '@/components/submissions/whats-next';
+import type { TimelineStage } from '@/components/submissions/whats-next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -42,6 +43,7 @@ type Props = {
     isClosed: boolean;
     statementLetterTemplateUrl: string | null;
     contactEmail: string | null;
+    timeline: TimelineStage[];
 };
 
 type PaperFormData = {
@@ -91,9 +93,11 @@ function ContactLine({ contactEmail }: { contactEmail: string | null }) {
 function SubmittedState({
     submission,
     contactEmail,
+    timeline,
 }: {
     submission: Props['submission'];
     contactEmail: string | null;
+    timeline: TimelineStage[];
 }) {
     const isRevisionClosed = submission.status === 'needs_revision';
 
@@ -145,7 +149,7 @@ function SubmittedState({
                 )}
             </div>
 
-            <WhatsNext />
+            <WhatsNext stages={timeline} />
 
             <Button variant="outline" asChild>
                 <Link href={dashboard()}>Go to dashboard</Link>
@@ -363,6 +367,7 @@ export default function ShowSubmission({
     isClosed,
     statementLetterTemplateUrl,
     contactEmail,
+    timeline,
 }: Props) {
     const formProps = {
         submission,
@@ -387,6 +392,7 @@ export default function ShowSubmission({
                 <SubmittedState
                     submission={submission}
                     contactEmail={contactEmail}
+                    timeline={timeline}
                 />
             </>
         );

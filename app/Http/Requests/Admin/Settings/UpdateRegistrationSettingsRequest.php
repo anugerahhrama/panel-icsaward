@@ -2,24 +2,12 @@
 
 namespace App\Http\Requests\Admin\Settings;
 
+use App\Enums\TimelineStage;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateRegistrationSettingsRequest extends FormRequest
 {
-    /**
-     * Free-text stage dates shown in the participant "What's next" panel.
-     *
-     * @var list<string>
-     */
-    public const array TIMELINE_KEYS = [
-        'timeline_administrative_selection',
-        'timeline_desk_evaluation',
-        'timeline_finalists_announcement',
-        'timeline_pitching',
-        'timeline_awarding_night',
-    ];
-
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -41,8 +29,12 @@ class UpdateRegistrationSettingsRequest extends FormRequest
             'registration_deadline' => ['required', 'date_format:Y-m-d', 'after_or_equal:registration_opens_at'],
             'paper_deadline' => ['required', 'date_format:Y-m-d', 'after_or_equal:registration_opens_at'],
             'max_registrations_per_user' => ['required', 'integer', 'min:1', 'max:20'],
-            ...collect(self::TIMELINE_KEYS)
-                ->mapWithKeys(fn (string $key): array => [$key => ['nullable', 'string', 'max:255']])
+            ...collect(TimelineStage::cases())
+                ->flatMap(fn (TimelineStage $stage): array => [
+                    $stage->dateKey() => ['nullable', 'string', 'max:255'],
+                    $stage->titleKey() => ['nullable', 'string', 'max:100'],
+                    $stage->descriptionKey() => ['nullable', 'string', 'max:500'],
+                ])
                 ->all(),
         ];
     }
@@ -57,6 +49,13 @@ class UpdateRegistrationSettingsRequest extends FormRequest
             'registration_deadline' => 'registration deadline',
             'paper_deadline' => 'paper deadline',
             'max_registrations_per_user' => 'registrations per account',
+            ...collect(TimelineStage::cases())
+                ->flatMap(fn (TimelineStage $stage): array => [
+                    $stage->dateKey() => "{$stage->defaultTitle()} date",
+                    $stage->titleKey() => "{$stage->defaultTitle()} title",
+                    $stage->descriptionKey() => "{$stage->defaultTitle()} description",
+                ])
+                ->all(),
         ];
     }
 }
