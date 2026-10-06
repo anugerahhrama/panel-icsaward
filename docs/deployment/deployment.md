@@ -48,7 +48,7 @@ File-file terkait:
 
 ## 2. Prasyarat
 
-- VPS dengan Docker + Compose plugin, Traefik sudah jalan (network `traefik-public` ada, certresolver bernama `myresolver` — sesuaikan label di `docker-compose.yml` kalau beda).
+- VPS dengan Docker + Compose plugin, Traefik sudah jalan (network `traefik-public` ada, Cloudflare Origin Certificate untuk domain ini sudah dimuat Traefik lewat file provider — router memakai `tls=true`, bukan certresolver).
 - DNS domain Assessment sudah mengarah ke IP VPS **sebelum** container dijalankan.
 - VPS bisa `git fetch` repo `olahkarsa/ics-award-panel-2026` (pasang deploy key read-only).
 - Kredensial SMTP, dan Google OAuth client (redirect URI `<APP_URL>/auth/google/callback`).
