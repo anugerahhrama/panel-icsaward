@@ -37,7 +37,7 @@ services:
             interval: 10s
             timeout: 5s
             retries: 5
-            start_period: 20s
+            start_period: 180s
         labels:
             - 'traefik.enable=true'
             - 'traefik.docker.network=traefik-public'
@@ -73,6 +73,14 @@ services:
         depends_on:
             app:
                 condition: service_healthy
+        # Override HEALTHCHECK bawaan image FrankenPHP (cek Caddy :2019) yang
+        # selalu gagal di container ini karena yang jalan queue:work, bukan Caddy.
+        healthcheck:
+            test: ['CMD-SHELL', 'pgrep -f "[a]rtisan queue:work" >/dev/null']
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 120s
         stop_grace_period: 60s
         deploy:
             resources:

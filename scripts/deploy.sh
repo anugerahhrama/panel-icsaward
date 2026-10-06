@@ -25,8 +25,8 @@ wait_healthy() {
 	echo "Waiting for ${container} to become healthy..."
 	until [ "$(docker inspect -f '{{.State.Health.Status}}' "$container" 2>/dev/null)" = "healthy" ]; do
 		tries=$((tries + 1))
-		if [ "$tries" -ge 60 ]; then
-			echo "✗ ${container} not healthy after 120s"
+		if [ "$tries" -ge 120 ]; then
+			echo "✗ ${container} not healthy after 240s"
 			docker compose logs --tail=100 app
 			exit 1
 		fi
