@@ -43,9 +43,7 @@ services:
             - 'traefik.docker.network=traefik-public'
             - 'traefik.http.routers.regis-icsa2026.rule=Host(`${APP_DOMAIN}`)'
             - 'traefik.http.routers.regis-icsa2026.entrypoints=websecure'
-            # TLS pakai Cloudflare Origin Certificate yang dimuat Traefik (file provider),
-            # bukan Let's Encrypt. Cloudflare SSL/TLS mode: Full (strict).
-            - 'traefik.http.routers.regis-icsa2026.tls=true'
+            - 'traefik.http.routers.regis-icsa2026.tls.certresolver=myresolver'
             - 'traefik.http.services.regis-icsa2026.loadbalancer.server.port=80'
         deploy:
             resources:
