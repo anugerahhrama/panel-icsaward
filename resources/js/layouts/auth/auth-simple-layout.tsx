@@ -92,28 +92,18 @@ export default function AuthSimpleLayout({
                     {children}
                 </div>
             </div>
-            <div className="flex items-center gap-4 rounded-2xl bg-background/90 px-4 py-2 shadow-lg shadow-brand-dark/20 backdrop-blur-sm sm:gap-6">
-                <div className="flex flex-col items-start gap-1">
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                        Organized by
-                    </span>
-                    <img
-                        src={olahkarsaLogo}
-                        alt="Olahkarsa Group"
-                        className="h-6 w-auto sm:h-7"
-                    />
-                </div>
+            <div className="flex items-center gap-4 rounded-2xl bg-background/90 px-6 py-3 shadow-lg shadow-brand-dark/20 backdrop-blur-sm sm:gap-6">
+                <img
+                    src={olahkarsaLogo}
+                    alt="Olahkarsa Group"
+                    className="h-6 w-auto sm:h-7"
+                />
                 <div className="h-8 w-px bg-border" aria-hidden />
-                <div className="flex flex-col items-start gap-1">
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                        Knowledge Partner
-                    </span>
-                    <img
-                        src={ibcsdLogo}
-                        alt="IBCSD"
-                        className="h-6 w-auto sm:h-7"
-                    />
-                </div>
+                <img
+                    src={ibcsdLogo}
+                    alt="IBCSD"
+                    className="h-6 w-auto sm:h-7"
+                />
             </div>
         </div>
     );

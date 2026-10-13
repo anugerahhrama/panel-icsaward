@@ -1,4 +1,5 @@
 import { useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import {
     FilePreviewButton,
@@ -20,7 +21,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { formatDateTimeWib, todayWib } from '@/lib/datetime';
+import { dateWib, formatDateTimeWib, todayWib } from '@/lib/datetime';
 import type { PaperRow } from '@/pages/admin/participants/papers-columns';
 import { update } from '@/routes/admin/participants/verification';
 
@@ -32,23 +33,35 @@ const DECISIONS: { value: Decision; label: string }[] = [
     { value: 'disqualified', label: 'Disqualified' },
 ];
 
+function isDecision(status: string): status is Decision {
+    return DECISIONS.some((decision) => decision.value === status);
+}
+
+/**
+ * Records the first decision for a submission under review, or changes an earlier one (prefilled with its details).
+ */
 function VerificationForm({
     submission,
     onSaved,
+    onCancel,
 }: {
     submission: PaperRow;
     onSaved: () => void;
+    onCancel?: () => void;
 }) {
+    const { verification } = submission;
     const { data, setData, put, processing, errors } = useForm<{
         decision: Decision | '';
         revision_note: string;
         revision_deadline: string;
         disqualified_reason: string;
     }>({
-        decision: '',
-        revision_note: '',
-        revision_deadline: '',
-        disqualified_reason: '',
+        decision: isDecision(submission.status) ? submission.status : '',
+        revision_note: verification.revision_note ?? '',
+        revision_deadline: verification.revision_deadline
+            ? dateWib(verification.revision_deadline)
+            : '',
+        disqualified_reason: verification.disqualified_reason ?? '',
     });
 
     const submit = (event: React.FormEvent) => {
@@ -89,8 +102,9 @@ function VerificationForm({
                     ))}
                 </ToggleGroup>
                 <p className="text-xs text-muted-foreground">
-                    The participant is emailed the decision. It cannot be
-                    changed afterwards.
+                    The participant is emailed the decision. It can be changed
+                    until judges score the submission; each change sends a new
+                    email.
                 </p>
                 <InputError message={errors.decision} />
             </div>
@@ -159,7 +173,12 @@ function VerificationForm({
                 </div>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+                {onCancel && (
+                    <Button type="button" variant="outline" onClick={onCancel}>
+                        Cancel
+                    </Button>
+                )}
                 <Button type="submit" disabled={processing || !data.decision}>
                     {processing && <Spinner />}
                     Save decision
@@ -200,7 +219,13 @@ function SubmittedFiles({
     );
 }
 
-function VerificationDetails({ submission }: { submission: PaperRow }) {
+function VerificationDetails({
+    submission,
+    onChange,
+}: {
+    submission: PaperRow;
+    onChange: () => void;
+}) {
     const { verification } = submission;
 
     if (!verification.reviewed_at) {
@@ -212,42 +237,53 @@ function VerificationDetails({ submission }: { submission: PaperRow }) {
     }
 
     return (
-        <dl className="grid gap-4">
-            <Detail
-                label="Decision"
-                value={<SubmissionStatusBadge status={submission.status} />}
-            />
-            {verification.revision_note && (
+        <div className="grid gap-4">
+            <dl className="grid gap-4">
                 <Detail
-                    label="Revision note"
-                    value={verification.revision_note}
+                    label="Decision"
+                    value={<SubmissionStatusBadge status={submission.status} />}
                 />
-            )}
-            {verification.revision_deadline && (
+                {verification.revision_note && (
+                    <Detail
+                        label="Revision note"
+                        value={verification.revision_note}
+                    />
+                )}
+                {verification.revision_deadline && (
+                    <Detail
+                        label="Revision deadline"
+                        value={formatDateTimeWib(
+                            verification.revision_deadline,
+                        )}
+                    />
+                )}
+                {verification.disqualified_reason && (
+                    <Detail
+                        label="Reason"
+                        value={verification.disqualified_reason}
+                    />
+                )}
                 <Detail
-                    label="Revision deadline"
-                    value={formatDateTimeWib(verification.revision_deadline)}
+                    label="Reviewed"
+                    value={`${formatDateTimeWib(verification.reviewed_at)}${verification.reviewer ? ` by ${verification.reviewer}` : ''}`}
                 />
-            )}
-            {verification.disqualified_reason && (
                 <Detail
-                    label="Reason"
-                    value={verification.disqualified_reason}
+                    label="Participant email"
+                    value={
+                        verification.notified_at
+                            ? `Sent ${formatDateTimeWib(verification.notified_at)}`
+                            : 'Pending'
+                    }
                 />
+            </dl>
+            {submission.can_change_decision && (
+                <div className="flex justify-end">
+                    <Button variant="outline" onClick={onChange}>
+                        Change decision
+                    </Button>
+                </div>
             )}
-            <Detail
-                label="Reviewed"
-                value={`${formatDateTimeWib(verification.reviewed_at)}${verification.reviewer ? ` by ${verification.reviewer}` : ''}`}
-            />
-            <Detail
-                label="Participant email"
-                value={
-                    verification.notified_at
-                        ? `Sent ${formatDateTimeWib(verification.notified_at)}`
-                        : 'Pending'
-                }
-            />
-        </dl>
+        </div>
     );
 }
 
@@ -262,16 +298,32 @@ export function VerificationSheet({
     onOpenChange: (open: boolean) => void;
     onPreview: (file: SubmittedFile) => void;
 }) {
+    const [changingId, setChangingId] = useState<number | null>(null);
     const isReviewable = submission?.status === 'under_review';
+    const isChanging =
+        submission !== null &&
+        !isReviewable &&
+        changingId === submission.id &&
+        submission.can_change_decision;
+
+    const handleOpenChange = (next: boolean) => {
+        if (!next) {
+            setChangingId(null);
+        }
+
+        onOpenChange(next);
+    };
 
     return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
+        <Sheet open={open} onOpenChange={handleOpenChange}>
             <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
                 <SheetHeader>
                     <SheetTitle>
                         {isReviewable
                             ? 'Administrative verification'
-                            : 'Verification decision'}
+                            : isChanging
+                              ? 'Change verification decision'
+                              : 'Verification decision'}
                     </SheetTitle>
                     <SheetDescription>
                         {submission
@@ -285,14 +337,22 @@ export function VerificationSheet({
                             submission={submission}
                             onPreview={onPreview}
                         />
-                        {isReviewable ? (
+                        {isReviewable || isChanging ? (
                             <VerificationForm
                                 key={submission.id}
                                 submission={submission}
-                                onSaved={() => onOpenChange(false)}
+                                onSaved={() => handleOpenChange(false)}
+                                onCancel={
+                                    isChanging
+                                        ? () => setChangingId(null)
+                                        : undefined
+                                }
                             />
                         ) : (
-                            <VerificationDetails submission={submission} />
+                            <VerificationDetails
+                                submission={submission}
+                                onChange={() => setChangingId(submission.id)}
+                            />
                         )}
                     </div>
                 )}

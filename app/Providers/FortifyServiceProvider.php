@@ -6,6 +6,7 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Enums\ApplicantType;
 use App\Enums\RegistrationStatus;
+use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Models\AwardCategory;
 use App\Models\Setting;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -71,7 +72,7 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(function () {
+        Fortify::registerView(function (Request $request) {
             $status = RegistrationStatus::current();
 
             if (! $status->isOpen()) {
@@ -89,6 +90,7 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Inertia::render('auth/register', [
                 'passwordRules' => Password::defaults()->toPasswordRulesString(),
+                'googleSignup' => $request->session()->get(GoogleLoginController::SIGNUP_SESSION_KEY),
                 'categories' => AwardCategory::query()
                     ->orderBy('sort_order')
                     ->orderBy('name')

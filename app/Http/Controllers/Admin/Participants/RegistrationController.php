@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Participants;
 
+use App\Actions\Submissions\DeleteRegistration;
 use App\Enums\SubmissionStatus;
 use App\Enums\UserRole;
 use App\Exports\RegistrationsExport;
@@ -10,6 +11,8 @@ use App\Http\Requests\Admin\ParticipantFilterRequest;
 use App\Models\AwardCategory;
 use App\Models\Setting;
 use App\Models\Submission;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -57,6 +60,24 @@ class RegistrationController extends Controller
             'categories' => AwardCategory::query()->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'statuses' => array_column(SubmissionStatus::cases(), 'value'),
         ]);
+    }
+
+    /**
+     * Permanently delete a registration (and the participant account when it was their last one). Superadmins only.
+     */
+    public function destroy(Submission $submission, DeleteRegistration $deleteRegistration): RedirectResponse
+    {
+        try {
+            $deleteRegistration->handle($submission);
+        } catch (ValidationException $exception) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
+
+            return back();
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "\"{$submission->initiative_title}\" deleted."]);
+
+        return back();
     }
 
     /**

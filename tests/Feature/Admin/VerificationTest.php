@@ -4,6 +4,7 @@ use App\Enums\SubmissionStatus;
 use App\Jobs\SendVerificationDecision;
 use App\Mail\VerificationDecision;
 use App\Models\AwardCategory;
+use App\Models\JudgeScore;
 use App\Models\Setting;
 use App\Models\Submission;
 use App\Models\User;
@@ -110,7 +111,36 @@ test('the decision details are required for the chosen decision', function (arra
     'disqualification without a reason' => [['decision' => 'disqualified'], ['disqualified_reason']],
 ]);
 
-test('a submission that is no longer under review cannot be decided again', function (SubmissionStatus $status) {
+test('an earlier decision can be changed and the participant is emailed again', function () {
+    Queue::fake();
+    $admin = User::factory()->admin()->create();
+    $submission = Submission::factory()->paperSubmitted()->create([
+        'status' => SubmissionStatus::NeedsRevision,
+        'revision_note' => 'Use the template.',
+        'revision_deadline' => '2026-10-22 16:59:59',
+        'reviewed_at' => now()->subDay(),
+        'notified_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.participants.verification.update', $submission), [
+            'decision' => 'disqualified',
+            'disqualified_reason' => 'Out of scope.',
+        ])
+        ->assertSessionHasNoErrors();
+
+    $submission->refresh();
+
+    expect($submission->status)->toBe(SubmissionStatus::Disqualified)
+        ->and($submission->disqualified_reason)->toBe('Out of scope.')
+        ->and($submission->revision_note)->toBeNull()
+        ->and($submission->revision_deadline)->toBeNull()
+        ->and($submission->reviewed_by)->toBe($admin->id)
+        ->and($submission->notified_at)->toBeNull();
+    Queue::assertPushed(SendVerificationDecision::class);
+});
+
+test('a decision cannot be recorded before the paper or after verification is over', function (SubmissionStatus $status) {
     Queue::fake();
     $submission = Submission::factory()->paperSubmitted()->create(['status' => $status]);
 
@@ -119,11 +149,31 @@ test('a submission that is no longer under review cannot be decided again', func
             'decision' => 'disqualified',
             'disqualified_reason' => 'Too late.',
         ])
-        ->assertSessionHasErrors(['decision' => 'This submission has already been reviewed.']);
+        ->assertSessionHasErrors(['decision' => 'This submission can no longer be verified.']);
 
     expect($submission->fresh()->status)->toBe($status);
     Queue::assertNothingPushed();
-})->with([SubmissionStatus::Registered, SubmissionStatus::Qualified, SubmissionStatus::NeedsRevision, SubmissionStatus::Disqualified]);
+})->with([SubmissionStatus::Registered, SubmissionStatus::Finalist]);
+
+test('a decision cannot be changed once judges have scored the submission', function () {
+    Queue::fake();
+    $submission = Submission::factory()->qualified()->create();
+    JudgeScore::factory()->for($submission)->create();
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->from(route('admin.participants.papers.index'))
+        ->put(route('admin.participants.verification.update', $submission), [
+            'decision' => 'disqualified',
+            'disqualified_reason' => 'Out of scope.',
+        ])
+        ->assertSessionHasErrors(['decision']);
+
+    expect($submission->fresh()->status)->toBe(SubmissionStatus::Qualified);
+    Queue::assertNothingPushed();
+
+    $this->get(route('admin.participants.papers.index'))
+        ->assertInertia(fn ($page) => $page->where('submissions.data.0.can_change_decision', false));
+});
 
 test('the decision email is sent once even when the job runs twice', function () {
     Mail::fake();

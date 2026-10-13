@@ -2,11 +2,14 @@
 
 use App\Enums\SubmissionStatus;
 use App\Enums\UserRole;
+use App\Mail\SubmissionConfirmation;
 use App\Models\AwardCategory;
 use App\Models\Setting;
 use App\Models\Submission;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
@@ -156,3 +159,44 @@ test('registration is rejected while registration is closed', function (string $
     'not open yet' => ['registration_opens_at', '2026-10-21', 'Registration is not open yet.'],
     'past the deadline' => ['registration_deadline', '2026-10-19', 'Registration is closed.'],
 ]);
+
+test('the registration screen prefills the google profile of a google sign up', function () {
+    $this->withSession(['google_signup' => ['name' => 'Google User', 'email' => 'google@example.com']])
+        ->get(route('register'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('googleSignup', ['name' => 'Google User', 'email' => 'google@example.com']));
+});
+
+test('participants signing up with google register without a password and receive the submission link', function () {
+    Mail::fake();
+    $category = AwardCategory::factory()->create();
+
+    $this->withSession(['google_signup' => ['name' => 'Google User', 'email' => 'google@example.com']])
+        ->post(route('register.store'), registrationPayload($category, [
+            'email' => 'google@example.com',
+            'password' => '',
+            'password_confirmation' => '',
+        ]))
+        ->assertRedirect(route('dashboard', absolute: false))
+        ->assertSessionMissing('google_signup');
+
+    $user = User::query()->where('email', 'google@example.com')->sole();
+    $this->assertAuthenticatedAs($user);
+    expect($user->email_verified_at)->not->toBeNull()
+        ->and(Hash::check('', $user->password))->toBeFalse();
+
+    $submission = $user->submissions()->sole();
+    Mail::assertQueued(SubmissionConfirmation::class, 1);
+    Mail::assertQueued(SubmissionConfirmation::class, fn (SubmissionConfirmation $mail): bool => $mail->submission->is($submission));
+});
+
+test('a google sign up cannot swap the email google verified', function () {
+    $category = AwardCategory::factory()->create();
+
+    $this->withSession(['google_signup' => ['name' => 'Google User', 'email' => 'google@example.com']])
+        ->post(route('register.store'), registrationPayload($category, ['email' => 'other@example.com']))
+        ->assertSessionHasErrors(['email' => 'Please use the email from your Google account.']);
+
+    $this->assertGuest();
+    expect(User::count())->toBe(0);
+});

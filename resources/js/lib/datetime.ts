@@ -13,13 +13,20 @@ export function formatDateTimeWib(value: string): string {
 }
 
 /**
- * Today's date in Western Indonesian Time as `YYYY-MM-DD`, e.g. for the `min` of a date input.
+ * The date of a moment in Western Indonesian Time as `YYYY-MM-DD`, e.g. for the value of a date input.
  */
-export function todayWib(): string {
+export function dateWib(value: string | Date): string {
     return new Intl.DateTimeFormat('en-CA', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         timeZone: 'Asia/Jakarta',
-    }).format(new Date());
+    }).format(new Date(value));
+}
+
+/**
+ * Today's date in Western Indonesian Time as `YYYY-MM-DD`, e.g. for the `min` of a date input.
+ */
+export function todayWib(): string {
+    return dateWib(new Date());
 }

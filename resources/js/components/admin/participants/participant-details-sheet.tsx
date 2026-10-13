@@ -2,6 +2,7 @@ import { CopyPasswordButton } from '@/components/admin/copy-password-button';
 import { Detail } from '@/components/admin/participants/detail';
 import { SubmissionStatusBadge } from '@/components/admin/participants/submission-status-badge';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
     Sheet,
@@ -33,16 +34,19 @@ function dateOrDash(value: string | null): string {
 }
 
 /**
- * Read-only details of one registration. The personal submission link only appears when the server sent it (superadmins).
+ * Read-only details of one registration. The personal submission link only appears when the server sent it (superadmins),
+ * and the delete action only when `onDelete` is given (superadmins).
  */
 export function ParticipantDetailsSheet({
     registration,
     open,
     onOpenChange,
+    onDelete,
 }: {
     registration: RegistrationRow | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onDelete?: (registration: RegistrationRow) => void;
 }) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -170,6 +174,29 @@ export function ParticipantDetailsSheet({
                                     signed in to their own account. Opening it
                                     verifies their email.
                                 </p>
+                            </section>
+                        )}
+
+                        {onDelete && (
+                            <section className="grid gap-2">
+                                <h3 className="text-sm font-medium">
+                                    Delete registration
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Permanently removes this registration and
+                                    its uploaded files. The participant account
+                                    is removed too when this is its only
+                                    registration, so the email can sign up
+                                    again.
+                                </p>
+                                <div>
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => onDelete(registration)}
+                                    >
+                                        Delete registration
+                                    </Button>
+                                </div>
                             </section>
                         )}
                     </div>
