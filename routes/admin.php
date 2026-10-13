@@ -54,6 +54,9 @@ Route::middleware(['auth', 'verified', 'role:superadmin,admin'])
         Route::prefix('participants')->name('participants.')->group(function () {
             Route::get('registrations', [RegistrationController::class, 'index'])->name('registrations.index');
             Route::get('registrations/export', [RegistrationController::class, 'export'])->name('registrations.export');
+            Route::delete('registrations/{submission}', [RegistrationController::class, 'destroy'])
+                ->middleware('role:superadmin')
+                ->name('registrations.destroy');
 
             Route::get('papers', [PaperSubmissionController::class, 'index'])->name('papers.index');
             Route::get('papers/export', [PaperSubmissionController::class, 'export'])->name('papers.export');

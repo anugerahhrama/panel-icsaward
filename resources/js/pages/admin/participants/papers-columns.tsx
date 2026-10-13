@@ -20,6 +20,8 @@ export type PaperRow = {
     paper: SubmittedFile | null;
     statement: SubmittedFile | null;
     status: SubmissionStatus;
+    /** Whether an admin may still record or change the verification decision (no judge scores yet). */
+    can_change_decision: boolean;
     verification: {
         revision_note: string | null;
         revision_deadline: string | null;

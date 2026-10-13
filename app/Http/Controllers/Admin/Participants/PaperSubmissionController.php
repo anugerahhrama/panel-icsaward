@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Participants;
 
+use App\Actions\Submissions\VerifySubmission;
 use App\Enums\FilePreviewKind;
 use App\Enums\SubmissionStatus;
 use App\Exports\PaperSubmissionsExport;
@@ -31,6 +32,7 @@ class PaperSubmissionController extends Controller
                 ->whereNotNull('paper_uploaded_at')
                 ->filteredForAdmin($filters)
                 ->with('reviewer:id,name')
+                ->withExists('judgeScores')
                 ->paginate($filters['per_page'])
                 ->withQueryString()
                 ->through(fn (Submission $submission): array => [
@@ -55,6 +57,8 @@ class PaperSubmissionController extends Controller
                         'preview_kind' => FilePreviewKind::fromFileName($submission->statement_original_name)->value,
                     ],
                     'status' => $submission->status->value,
+                    'can_change_decision' => in_array($submission->status, VerifySubmission::decidableStatuses(), true)
+                        && ! $submission->judge_scores_exists,
                     'verification' => [
                         'revision_note' => $submission->revision_note,
                         'revision_deadline' => $submission->revision_deadline?->toIso8601String(),

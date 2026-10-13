@@ -21,6 +21,7 @@ Route::middleware('guest')->prefix('auth/google')->name('auth.google.')->group(f
     Route::get('callback', [GoogleLoginController::class, 'callback'])
         ->middleware('throttle:10,1')
         ->name('callback');
+    Route::delete('signup', [GoogleLoginController::class, 'cancelSignup'])->name('signup.cancel');
 });
 
 Route::get('submissions/{submission}/files/{file}/shared', SharedSubmissionFileController::class)

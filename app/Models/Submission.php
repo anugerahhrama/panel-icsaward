@@ -62,6 +62,7 @@ use Illuminate\Support\Carbon;
  * @property-read bool|null $judge_has_scores
  * @property-read bool|null $judge_has_submitted
  * @property-read string|null $judge_scored_at
+ * @property-read bool|null $judge_scores_exists
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */

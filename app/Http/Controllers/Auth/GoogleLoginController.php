@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\RegistrationStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -17,6 +18,11 @@ use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse
 class GoogleLoginController extends Controller
 {
     /**
+     * The session key holding the verified Google profile of a participant who is signing up.
+     */
+    public const SIGNUP_SESSION_KEY = 'google_signup';
+
+    /**
      * Send the participant to Google's consent screen.
      */
     public function redirect(): SymfonyRedirectResponse
@@ -25,10 +31,11 @@ class GoogleLoginController extends Controller
     }
 
     /**
-     * Log an existing participant in with the Google account that owns their email.
+     * Log a participant in with their Google account, or start sign up for a new email.
      *
      * Google has already proven ownership of the email, so an unverified participant is
-     * marked verified and two-factor authentication is not requested.
+     * marked verified and two-factor authentication is not requested. An unknown email is
+     * kept in the session and continues through the regular sign up wizard.
      */
     public function callback(Request $request): RedirectResponse
     {
@@ -50,10 +57,10 @@ class GoogleLoginController extends Controller
             return $this->failed('Your Google account email is not verified.');
         }
 
-        $user = User::query()->where('email', $email)->first();
+        $user = User::withTrashed()->where('email', $email)->first();
 
         if ($user === null) {
-            return $this->failed('No account found for this Google email. Please sign up first.');
+            return $this->startSignup($request, $email, $googleUser->getName());
         }
 
         if ($user->role !== UserRole::Participant) {
@@ -68,6 +75,35 @@ class GoogleLoginController extends Controller
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard'));
+    }
+
+    /**
+     * Forget the Google profile so the participant can sign up with another email instead.
+     */
+    public function cancelSignup(Request $request): RedirectResponse
+    {
+        $request->session()->forget(self::SIGNUP_SESSION_KEY);
+
+        return to_route('register');
+    }
+
+    /**
+     * Remember the verified Google profile and send the participant to the sign up wizard.
+     */
+    private function startSignup(Request $request, string $email, ?string $name): RedirectResponse
+    {
+        $status = RegistrationStatus::current();
+
+        if (! $status->isOpen()) {
+            return $this->failed($status->rejectionMessage());
+        }
+
+        $request->session()->put(self::SIGNUP_SESSION_KEY, [
+            'name' => $name ?? '',
+            'email' => $email,
+        ]);
+
+        return to_route('register');
     }
 
     /**

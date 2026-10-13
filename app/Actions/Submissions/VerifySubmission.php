@@ -13,11 +13,13 @@ use Illuminate\Validation\ValidationException;
 class VerifySubmission
 {
     /**
-     * Record the committee's administrative verification decision and queue the participant notification.
+     * Record (or change) the committee's administrative verification decision and queue the participant notification.
      *
-     * The update is conditional on the submission still being `under_review`, so two admins deciding at the
-     * same time cannot both win: the second one affects no rows and is rejected. Details that do not belong
-     * to the chosen decision are cleared.
+     * A submission under review gets its first decision; an earlier decision (qualified, needs revision,
+     * disqualified) may be changed until judges have scored the submission. The update is conditional on the
+     * status the request was made against, so a submission that moved on in the meantime (a revision upload,
+     * a finalist confirmation) is rejected instead of overwritten. Details that do not belong to the chosen
+     * decision are cleared.
      *
      * @param  array{revision_note: string|null, revision_deadline: CarbonImmutable|null, disqualified_reason: string|null}  $details
      *
@@ -25,12 +27,19 @@ class VerifySubmission
      */
     public function handle(Submission $submission, User $reviewer, SubmissionStatus $decision, array $details): void
     {
+        if (! in_array($submission->status, self::decidableStatuses(), true)) {
+            throw ValidationException::withMessages([
+                'decision' => 'This submission can no longer be verified.',
+            ]);
+        }
+
         DB::transaction(function () use ($submission, $reviewer, $decision, $details): void {
             $isRevision = $decision === SubmissionStatus::NeedsRevision;
 
             $updated = Submission::query()
                 ->whereKey($submission->id)
-                ->where('status', SubmissionStatus::UnderReview)
+                ->where('status', $submission->status)
+                ->whereDoesntHave('judgeScores')
                 ->update([
                     'status' => $decision,
                     'revision_note' => $isRevision ? $details['revision_note'] : null,
@@ -43,11 +52,21 @@ class VerifySubmission
 
             if ($updated === 0) {
                 throw ValidationException::withMessages([
-                    'decision' => 'This submission has already been reviewed.',
+                    'decision' => 'This submission changed in the meantime or has already been scored by judges.',
                 ]);
             }
 
             SendVerificationDecision::dispatch($submission)->afterCommit();
         });
+    }
+
+    /**
+     * The statuses a decision can be recorded on: the first review, or a change to an earlier decision.
+     *
+     * @return list<SubmissionStatus>
+     */
+    public static function decidableStatuses(): array
+    {
+        return [SubmissionStatus::UnderReview, ...SubmissionStatus::verificationDecisions()];
     }
 }

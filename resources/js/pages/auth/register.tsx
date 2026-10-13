@@ -2,6 +2,7 @@ import { Head, router, useForm, useHttp } from '@inertiajs/react';
 import { Download } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import GoogleButton from '@/components/auth/google-button';
 import { RegisterStepper } from '@/components/auth/register-stepper';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -20,6 +21,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { toastFormErrors } from '@/lib/form-errors';
 import { login } from '@/routes';
+import { cancel as cancelGoogleSignup } from '@/routes/auth/google/signup';
 import { store, validate } from '@/routes/register';
 
 type ApplicantType = 'organization' | 'individual';
@@ -32,8 +34,14 @@ type AwardCategory = {
     paper_template_url: string | null;
 };
 
+type GoogleSignup = {
+    name: string;
+    email: string;
+};
+
 type Props = {
     passwordRules: string;
+    googleSignup: GoogleSignup | null;
     categories: AwardCategory[];
     terms: Record<ApplicantType, string>;
 };
@@ -93,13 +101,18 @@ const APPLICANT_TYPE_LABELS: Record<ApplicantType, string> = {
     individual: 'Individual',
 };
 
-export default function Register({ passwordRules, categories, terms }: Props) {
+export default function Register({
+    passwordRules,
+    googleSignup,
+    categories,
+    terms,
+}: Props) {
     const [step, setStep] = useState(0);
 
     const form = useForm<RegisterForm>({
-        name: '',
+        name: googleSignup?.name ?? '',
         phone: '',
-        email: '',
+        email: googleSignup?.email ?? '',
         position: '',
         company_name: '',
         password: '',
@@ -191,6 +204,32 @@ export default function Register({ passwordRules, categories, terms }: Props) {
 
                 {currentStep.key === 'account' && (
                     <div className="grid gap-5">
+                        {googleSignup ? (
+                            <p className="rounded-lg border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+                                Signing up with Google as{' '}
+                                <span className="font-medium text-foreground">
+                                    {googleSignup.email}
+                                </span>
+                                . Not you?{' '}
+                                <TextLink
+                                    href={cancelGoogleSignup()}
+                                    as="button"
+                                >
+                                    Use email instead
+                                </TextLink>
+                            </p>
+                        ) : (
+                            <>
+                                <GoogleButton>Sign up with Google</GoogleButton>
+
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground uppercase">
+                                    <span className="h-px flex-1 bg-border" />
+                                    or
+                                    <span className="h-px flex-1 bg-border" />
+                                </div>
+                            </>
+                        )}
+
                         <div className="grid gap-2">
                             <Label htmlFor="name">Full name</Label>
                             <Input
@@ -214,6 +253,7 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                                     aria-invalid={Boolean(errors.email)}
                                     type="email"
                                     autoComplete="email"
+                                    readOnly={googleSignup !== null}
                                     value={data.email}
                                     onChange={(e) =>
                                         setData('email', e.target.value)
@@ -270,44 +310,46 @@ export default function Register({ passwordRules, categories, terms }: Props) {
                             </div>
                         </div>
 
-                        <div className="grid gap-5 sm:grid-cols-2">
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
-                                <PasswordInput
-                                    id="password"
-                                    aria-invalid={Boolean(errors.password)}
-                                    autoComplete="new-password"
-                                    value={data.password}
-                                    onChange={(e) =>
-                                        setData('password', e.target.value)
-                                    }
-                                    placeholder="Password"
-                                    passwordrules={passwordRules}
-                                />
-                            </div>
+                        {googleSignup === null && (
+                            <div className="grid gap-5 sm:grid-cols-2">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="password">Password</Label>
+                                    <PasswordInput
+                                        id="password"
+                                        aria-invalid={Boolean(errors.password)}
+                                        autoComplete="new-password"
+                                        value={data.password}
+                                        onChange={(e) =>
+                                            setData('password', e.target.value)
+                                        }
+                                        placeholder="Password"
+                                        passwordrules={passwordRules}
+                                    />
+                                </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm password
-                                </Label>
-                                <PasswordInput
-                                    id="password_confirmation"
-                                    aria-invalid={Boolean(
-                                        errors.password_confirmation,
-                                    )}
-                                    autoComplete="new-password"
-                                    value={data.password_confirmation}
-                                    onChange={(e) =>
-                                        setData(
-                                            'password_confirmation',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="Confirm password"
-                                    passwordrules={passwordRules}
-                                />
+                                <div className="grid gap-2">
+                                    <Label htmlFor="password_confirmation">
+                                        Confirm password
+                                    </Label>
+                                    <PasswordInput
+                                        id="password_confirmation"
+                                        aria-invalid={Boolean(
+                                            errors.password_confirmation,
+                                        )}
+                                        autoComplete="new-password"
+                                        value={data.password_confirmation}
+                                        onChange={(e) =>
+                                            setData(
+                                                'password_confirmation',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Confirm password"
+                                        passwordrules={passwordRules}
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
 

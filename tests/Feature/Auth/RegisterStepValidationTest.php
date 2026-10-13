@@ -68,3 +68,15 @@ test('every sign up step is rejected while registration is closed', function () 
         ->assertUnprocessable()
         ->assertOnlyJsonValidationErrors(['registration' => 'Registration is closed.']);
 });
+
+test('the account step of a google sign up needs no password', function () {
+    $this->withSession(['google_signup' => ['name' => 'Google User', 'email' => 'google@example.com']])
+        ->postJson(route('register.validate', 'account'), [
+            'name' => 'Google User',
+            'phone' => '+62 812-3456-7890',
+            'email' => 'google@example.com',
+            'position' => 'Sustainability Manager',
+            'company_name' => 'PT Example Indonesia',
+        ])
+        ->assertNoContent();
+});

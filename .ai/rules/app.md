@@ -82,7 +82,7 @@ Buat dengan `php artisan make:export`. Implement `FromQuery` + `WithHeadings` + 
 
 ## Keputusan panitia atas submission: update kondisional + job dengan klaim `notified_at`
 
-Pola `App\Actions\Submissions\VerifySubmission`: di `DB::transaction`, `Submission::whereKey()->where('status', <status asal>)->update([...])`; hasil `0` baris = sudah diputuskan orang lain → `ValidationException` (key `decision`). Detail yang tak relevan dengan keputusan di-set `null`, `notified_at` direset. Email dikirim oleh job `SendVerificationDecision` (`dispatch()->afterCommit()`), yang mengklaim `notified_at` secara atomik (`whereNull('notified_at')->update(...)`, `0` → return) sebelum `Mail::send` dan mengembalikannya ke `null` bila kirim gagal. Mailable-nya TIDAK `ShouldQueue` karena sudah di dalam job. Pakai pola ini untuk pengumuman finalis/pemenang nanti. (Verifikasi administrasi, 2026-09-30.)
+Pola `App\Actions\Submissions\VerifySubmission`: di `DB::transaction`, `Submission::whereKey()->where('status', <status asal>)->update([...])`; hasil `0` baris = sudah diputuskan orang lain → `ValidationException` (key `decision`). Detail yang tak relevan dengan keputusan di-set `null`, `notified_at` direset. Email dikirim oleh job `SendVerificationDecision` (`dispatch()->afterCommit()`), yang mengklaim `notified_at` secara atomik (`whereNull('notified_at')->update(...)`, `0` → return) sebelum `Mail::send` dan mengembalikannya ke `null` bila kirim gagal. Mailable-nya TIDAK `ShouldQueue` karena sudah di dalam job. Pakai pola ini untuk pengumuman finalis/pemenang nanti. (Verifikasi administrasi, 2026-09-30.) Keputusan bisa diubah (keputusan user 2026-10-13): `VerifySubmission::decidableStatuses()` = `under_review` + `verificationDecisions()`, update kondisional pada status yang dimuat route binding + `whereDoesntHave('judgeScores')`; tiap perubahan mengirim email baru. Row Paper Submissions membawa `can_change_decision`.
 
 ## Carbon ber-timezone WIB tidak dikonversi saat disimpan — baik lewat builder maupun atribut model
 
@@ -148,9 +148,24 @@ Keputusan user: passkey (bawaan starter kit Fortify) tidak dipakai. `Features::p
 
 `App\Http\Controllers\SubmissionFilePreviewController` (authorize `downloadFiles`) dipakai dua route: `admin.participants.files.preview` dan `judge.submissions.files.preview` (juri lolos lewat `score()`: ditugaskan, tidak recused, tahap `forJudges()`). Penyajian dari `FilePreviewKind::fromFileName()`: PDF/gambar → `$disk->response(..., 'inline')`, Office → redirect ke Office Online (`OFFICE_VIEWER_URL?src=`) dengan signed URL baru ke `submissions.files.shared`, sisanya → download. Route shared sengaja tanpa `auth` (Microsoft yang mengambil file); otorisasinya signature 10 menit (`SHARED_LINK_MINUTES`) yang hanya dibuat endpoint preview. Pakai `URL::temporarySignedRoute(..., absolute: false)` + `url()` dan middleware `signed:relative`, supaya signature tidak gagal di belakang proxy HTTPS. Jangan kirim signed URL lewat props (kedaluwarsa kalau halaman lama terbuka). Props file ke frontend = bentuk `SubmittedFile` `{name, url, preview_url, preview_kind}` (lihat `PaperSubmissionController`, `Judge\SubmissionController::show`). Path/nama file dibaca lewat `Submission::submittedFile($file)`. Preview Office tidak bisa diuji di localhost. (Preview dokumen admin, 2026-09-30; dibuka untuk juri 2026-10-01.)
 
-## Login Google = khusus peserta yang sudah terdaftar, tanpa 2FA
+## Login & Sign up Google = satu callback, akun baru tetap lewat wizard
 
-Keputusan user: `Auth\GoogleLoginController` (Socialite, route `auth.google.*` di group `guest`) hanya memasukkan user role `participant` yang emailnya sudah ada. Google tidak pernah membuat akun (Sign Up tetap lewat wizard + gate registrasi). Admin/superadmin/juri ditolak dengan pesan yang sama, tanpa menyebut perannya. Email wajib `email_verified` dari Google. `email_verified_at` yang kosong diisi, dan 2FA sengaja dilewati. Penolakan = `to_route('login')->withErrors(['google' => …])`, dibaca halaman login lewat `usePage().props.errors`, bukan render prop `<Form>`. Test memakai `Socialite::fake('google', $user)`; closure yang melempar `InvalidStateException` mensimulasikan state gagal. (Login via Google, 2026-09-30.)
+`Auth\GoogleLoginController` (Socialite, route `auth.google.*` di group `guest`) memakai satu callback untuk login dan sign up. Email wajib `email_verified` dari Google.
+
+- **Email sudah ada** (dicari `withTrashed`):
+  - role `participant` → login. `email_verified_at` yang kosong diisi, dan 2FA sengaja dilewati.
+  - role lain (termasuk admin yang terhapus) → ditolak dengan pesan yang sama, tanpa menyebut perannya.
+- **Email baru:**
+  - Gate `RegistrationStatus::current()` dicek dulu.
+  - Lolos gate → profil disimpan di session `GoogleLoginController::SIGNUP_SESSION_KEY` (`google_signup`), lalu redirect ke wizard `register`.
+  - Google tidak pernah membuat akun langsung.
+- **Session `google_signup` aktif:**
+  - `RegistrationValidationRules::accountRules()` membuang `password` dan mengunci email dengan `Rule::in([emailGoogle])`. Berlaku untuk step validation dan `CreateNewUser`.
+  - `CreateNewUser` memberi password acak (`Str::password`) dan `email_verified_at`, lalu menghapus session.
+  - `SubmissionConfirmation` diantrekan eksplisit, karena listener `Registered` bawaan melewati user yang sudah verified. Jangan dihapus, nanti link submission tidak terkirim.
+- Penolakan = `to_route('login')->withErrors(['google' => …])`, dibaca halaman login lewat `usePage().props.errors`.
+
+Test memakai `Socialite::fake('google', $user)`, dan sign up diuji dengan `withSession(['google_signup' => …])`. (Login via Google 2026-09-30, Sign up with Google 2026-10-13.)
 
 ## API Landing: `routes/api.php` manual + token terenkripsi di `Setting`
 
@@ -178,7 +193,7 @@ Keputusan user: `pitching_sessions` unique per `award_category_id`, `pitching_sl
 
 ## `User` pakai SoftDeletes, tapi hanya akun admin/superadmin yang di-soft delete
 
-Keputusan user: akun admin/superadmin yang dihapus di Admin Accounts di-soft delete (tidak bisa login, sesi lama putus karena user provider melewati baris trashed) dan bisa di-restore. Semua jalur hapus lain wajib `forceDelete()` supaya email bisa dipakai lagi dan FK `cascade`/`nullOnDelete` tetap jalan: hapus juri (`JudgeController::destroy`), hapus akun peserta (Settings → Delete account). Relasi riwayat ke user (`Submission::reviewer`, `AwardCategory::finalistsConfirmer`) memakai `->withTrashed()`. `Rule::unique(User::class)` ikut menghitung baris trashed, jadi email akun terhapus tetap "terpakai". (Kelola akun admin, 2026-09-30.)
+Keputusan user: akun admin/superadmin yang dihapus di Admin Accounts di-soft delete (tidak bisa login, sesi lama putus karena user provider melewati baris trashed) dan bisa di-restore. Semua jalur hapus lain wajib `forceDelete()` supaya email bisa dipakai lagi dan FK `cascade`/`nullOnDelete` tetap jalan: hapus juri (`JudgeController::destroy`), hapus akun peserta (Settings → Delete account), hapus registrasi oleh superadmin (`DeleteRegistration`: submission + folder file, akun peserta ikut `forceDelete` bila itu registrasi terakhirnya; ditolak bila sudah ada skor juri). Relasi riwayat ke user (`Submission::reviewer`, `AwardCategory::finalistsConfirmer`) memakai `->withTrashed()`. `Rule::unique(User::class)` ikut menghitung baris trashed, jadi email akun terhapus tetap "terpakai". (Kelola akun admin, 2026-09-30.)
 
 ## Akun admin dikelola di Admin Accounts, minimal satu superadmin aktif
 
