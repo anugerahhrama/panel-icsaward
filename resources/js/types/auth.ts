@@ -7,6 +7,9 @@ export type User = {
     avatar?: string;
     email_verified_at: string | null;
     role: UserRole;
+    phone?: string | null;
+    position?: string | null;
+    company_name?: string | null;
     two_factor_enabled?: boolean;
     created_at: string;
     updated_at: string;

@@ -1,5 +1,5 @@
-import { Head, usePage } from '@inertiajs/react';
-import { Mail } from 'lucide-react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { Mail, Plus } from 'lucide-react';
 import Heading from '@/components/heading';
 import type {
     DashboardSubmission,
@@ -8,13 +8,27 @@ import type {
 import { SubmissionStatusCard } from '@/components/submissions/submission-status-card';
 import type { TimelineStage } from '@/components/submissions/whats-next';
 import { WhatsNext } from '@/components/submissions/whats-next';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { dashboard } from '@/routes';
+import { create as createSubmission } from '@/routes/submissions';
 
 type Props = PaperDeadline & {
     submissions: DashboardSubmission[];
     timeline: TimelineStage[];
+    canRegisterAnother: boolean;
 };
+
+function RegisterInitiativeButton({ label }: { label: string }) {
+    return (
+        <Button variant="outline" asChild>
+            <Link href={createSubmission()}>
+                <Plus />
+                {label}
+            </Link>
+        </Button>
+    );
+}
 
 function ContactCommittee({ contactEmail }: { contactEmail: string | null }) {
     if (!contactEmail) {
@@ -41,6 +55,7 @@ function ContactCommittee({ contactEmail }: { contactEmail: string | null }) {
 export default function Dashboard({
     submissions,
     timeline,
+    canRegisterAnother,
     ...deadline
 }: Props) {
     const { auth } = usePage().props;
@@ -49,10 +64,15 @@ export default function Dashboard({
         <>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <Heading
-                    title={`Welcome, ${auth.user?.name ?? ''}`}
-                    description="Track your ICS Award 2026 submission and what happens next."
-                />
+                <div className="flex flex-wrap items-start justify-between gap-x-4">
+                    <Heading
+                        title={`Welcome, ${auth.user?.name ?? ''}`}
+                        description="Track your ICS Award 2026 submission and what happens next."
+                    />
+                    {canRegisterAnother && submissions.length > 0 && (
+                        <RegisterInitiativeButton label="Register another initiative" />
+                    )}
+                </div>
 
                 <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
                     <div className="grid gap-4">
@@ -66,14 +86,21 @@ export default function Dashboard({
                             ))
                         ) : (
                             <Card>
-                                <CardContent className="grid gap-1 text-sm">
-                                    <p className="font-medium">
-                                        No submissions yet
-                                    </p>
-                                    <p className="text-muted-foreground">
-                                        Your registered initiatives will appear
-                                        here.
-                                    </p>
+                                <CardContent className="grid gap-4 text-sm">
+                                    <div className="grid gap-1">
+                                        <p className="font-medium">
+                                            No submissions yet
+                                        </p>
+                                        <p className="text-muted-foreground">
+                                            Your registered initiatives will
+                                            appear here.
+                                        </p>
+                                    </div>
+                                    {canRegisterAnother && (
+                                        <div>
+                                            <RegisterInitiativeButton label="Register another initiative" />
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         )}

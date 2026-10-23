@@ -51,7 +51,7 @@ SVG dari Adobe Illustrator membawa data edit `<i:aipgf>` (base64 zstd) yang ±98
 
 ## Komponen submission peserta di `components/submissions/`
 
-`WhatsNext` (prop `stages` opsional, fallback daftar statis), `LockedFile` (`href` opsional → tombol unduh), `SubmissionStatusCard` (stepper + panel aksi). Deadline diformat dengan `formatDateTimeWib` (`lib/datetime.ts`), sisa waktu dengan `useTimeLeft` (`hooks/use-time-left.ts`, dihitung setelah mount). Halaman `dashboard` (peserta) pakai `AppHeaderLayout` (dipetakan di `app.tsx`); `judge/*` pakai `AppLayout` default dengan sidebar (keputusan 2026-09-30); halaman `submissions/*` tetap `AuthLayout`. Panel status lanjutan (`needs_revision`, pitching) ditambahkan ke `SubmissionStatusCard`, bukan halaman baru. (Dashboard peserta, 2026-09-29.)
+`WhatsNext` (prop `stages` opsional, fallback daftar statis), `LockedFile` (`href` opsional → tombol unduh), `SubmissionStatusCard` (stepper + panel aksi). Deadline diformat dengan `formatDateTimeWib` (`lib/datetime.ts`), sisa waktu dengan `useTimeLeft` (`hooks/use-time-left.ts`, dihitung setelah mount). Halaman `dashboard` (peserta) pakai `AppHeaderLayout` (dipetakan di `app.tsx`); `judge/*` pakai `AppLayout` default dengan sidebar (keputusan 2026-09-30); halaman `submissions/*` tetap `AuthLayout`. Panel status lanjutan (`needs_revision`, pitching) ditambahkan ke `SubmissionStatusCard`, bukan halaman baru. `VerificationPanel` diekspor dan juga dirender `submissions/show` setelah paper terkunci (2026-10-22), jadi panel status baru otomatis tampil di kedua tempat. (Dashboard peserta, 2026-09-29.)
 
 ## Preview file peserta: `components/submissions/file-preview.tsx`; juri = panel kanan, bukan dialog
 

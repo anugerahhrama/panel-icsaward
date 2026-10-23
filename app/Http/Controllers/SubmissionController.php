@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Submissions\ParticipantSubmissionData;
 use App\Enums\TimelineStage;
 use App\Http\Requests\StorePaperRequest;
 use App\Models\Setting;
@@ -19,7 +20,7 @@ class SubmissionController extends Controller
      *
      * Opening the link proves the participant received the email, so it also verifies their address.
      */
-    public function show(Request $request, Submission $submission): Response
+    public function show(Request $request, Submission $submission, ParticipantSubmissionData $participantSubmissionData): Response
     {
         Gate::authorize('view', $submission);
 
@@ -32,25 +33,7 @@ class SubmissionController extends Controller
         $deadline = Setting::endOfDay('paper_deadline');
 
         return Inertia::render('submissions/show', [
-            'submission' => [
-                'uuid' => $submission->uuid,
-                'initiativeTitle' => $submission->initiative_title,
-                'category' => $submission->awardCategory->name,
-                'paperTemplateUrl' => $submission->awardCategory->paper_template_url ?? Setting::publicFileUrl('submission_template_path'),
-                'status' => $submission->statusForParticipant()->value,
-                'paperUploadedAt' => $submission->paper_uploaded_at?->toIso8601String(),
-                'paperOriginalName' => $submission->paper_original_name,
-                'paperUrl' => $submission->paper_path === null
-                    ? null
-                    : route('submissions.files.show', [$submission, 'paper']),
-                'statementOriginalName' => $submission->statement_original_name,
-                'statementUrl' => $submission->statement_path === null
-                    ? null
-                    : route('submissions.files.show', [$submission, 'statement']),
-                'revisionNote' => $submission->revision_note,
-                'revisionDeadline' => $submission->revision_deadline?->toIso8601String(),
-                'isRevisionOpen' => $submission->isRevisionOpen(),
-            ],
+            'submission' => $participantSubmissionData->one($submission),
             'requirements' => [
                 'paperExtensions' => StorePaperRequest::paperExtensions(),
                 'statementLetterExtensions' => StorePaperRequest::STATEMENT_LETTER_EXTENSIONS,

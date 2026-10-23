@@ -57,29 +57,15 @@ trait RegistrationValidationRules
             return [
                 'name' => $this->nameRules(),
                 'email' => ['required', 'string', 'email', Rule::in([$googleSignup['email']]), Rule::unique(User::class)],
-                'phone' => $this->phoneRules(),
-                'position' => ['required', 'string', 'max:255'],
-                'company_name' => ['required', 'string', 'max:255'],
+                ...$this->participantProfileRules(),
             ];
         }
 
         return [
             ...$this->profileRules(),
-            'phone' => $this->phoneRules(),
-            'position' => ['required', 'string', 'max:255'],
-            'company_name' => ['required', 'string', 'max:255'],
+            ...$this->participantProfileRules(),
             'password' => $this->passwordRules(),
         ];
-    }
-
-    /**
-     * Get the validation rules for the participant's phone number.
-     *
-     * @return array<int, string>
-     */
-    protected function phoneRules(): array
-    {
-        return ['required', 'string', 'max:30', 'regex:/^\+?[0-9\s\-()]{6,}$/'];
     }
 
     /**
@@ -116,7 +102,7 @@ trait RegistrationValidationRules
     protected function registrationMessages(): array
     {
         return [
-            'phone.regex' => 'Please enter a valid phone number.',
+            ...$this->participantProfileMessages(),
             'email.in' => 'Please use the email from your Google account.',
             'award_category_id.required' => 'Please choose an award category.',
             'award_category_id.exists' => 'The selected award category is not available.',

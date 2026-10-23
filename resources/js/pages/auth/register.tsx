@@ -1,38 +1,28 @@
 import { Head, router, useForm, useHttp } from '@inertiajs/react';
-import { Download } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import GoogleButton from '@/components/auth/google-button';
 import { RegisterStepper } from '@/components/auth/register-stepper';
 import PasswordInput from '@/components/password-input';
+import type {
+    ApplicantType,
+    AwardCategory,
+} from '@/components/submissions/initiative-fields';
+import {
+    findCategory,
+    INITIATIVE_FIELDS,
+    InitiativeFields,
+} from '@/components/submissions/initiative-fields';
+import { TermsFields } from '@/components/submissions/terms-fields';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
 import { toastFormErrors } from '@/lib/form-errors';
 import { login } from '@/routes';
 import { cancel as cancelGoogleSignup } from '@/routes/auth/google/signup';
 import { store, validate } from '@/routes/register';
-
-type ApplicantType = 'organization' | 'individual';
-
-type AwardCategory = {
-    id: number;
-    name: string;
-    description: string | null;
-    applicant_type: ApplicantType;
-    paper_template_url: string | null;
-};
 
 type GoogleSignup = {
     name: string;
@@ -77,11 +67,7 @@ const STEPS = [
     {
         key: 'initiative',
         label: 'Initiative',
-        fields: [
-            'award_category_id',
-            'initiative_title',
-            'initiative_description',
-        ],
+        fields: INITIATIVE_FIELDS,
     },
     {
         key: 'terms',
@@ -93,13 +79,6 @@ const STEPS = [
     label: string;
     fields: readonly (keyof RegisterForm)[];
 }[];
-
-const DESCRIPTION_MAX_LENGTH = 1000;
-
-const APPLICANT_TYPE_LABELS: Record<ApplicantType, string> = {
-    organization: 'Organization',
-    individual: 'Individual',
-};
 
 export default function Register({
     passwordRules,
@@ -129,14 +108,7 @@ export default function Register({
     const isLastStep = step === STEPS.length - 1;
     const isProcessing = form.processing || stepValidation.processing;
 
-    const selectedCategory = categories.find(
-        (category) => String(category.id) === data.award_category_id,
-    );
-    const applicantType = selectedCategory?.applicant_type ?? 'organization';
-    const termPoints = terms[applicantType]
-        .split('\n')
-        .map((point) => point.trim())
-        .filter((point) => point !== '');
+    const selectedCategory = findCategory(categories, data.award_category_id);
 
     function goToStep(index: number) {
         setStep(index);
@@ -354,147 +326,24 @@ export default function Register({
                 )}
 
                 {currentStep.key === 'initiative' && (
-                    <div className="grid gap-5">
-                        <div className="grid gap-2">
-                            <Label htmlFor="award_category_id">
-                                Award category
-                            </Label>
-                            <Select
-                                value={data.award_category_id}
-                                onValueChange={(value) =>
-                                    setData('award_category_id', value)
-                                }
-                            >
-                                <SelectTrigger
-                                    id="award_category_id"
-                                    aria-invalid={Boolean(
-                                        errors.award_category_id,
-                                    )}
-                                    className="w-full"
-                                >
-                                    <SelectValue placeholder="Choose a category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map((category) => (
-                                        <SelectItem
-                                            key={category.id}
-                                            value={String(category.id)}
-                                        >
-                                            {category.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {selectedCategory && (
-                                <p className="text-xs text-muted-foreground">
-                                    {APPLICANT_TYPE_LABELS[applicantType]}{' '}
-                                    category
-                                    {selectedCategory.description &&
-                                        ` · ${selectedCategory.description}`}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="initiative_title">
-                                Initiative title
-                            </Label>
-                            <Input
-                                id="initiative_title"
-                                aria-invalid={Boolean(errors.initiative_title)}
-                                value={data.initiative_title}
-                                onChange={(e) =>
-                                    setData('initiative_title', e.target.value)
-                                }
-                                placeholder="The name of your initiative"
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="initiative_description">
-                                Short description
-                            </Label>
-                            <Textarea
-                                id="initiative_description"
-                                aria-invalid={Boolean(
-                                    errors.initiative_description,
-                                )}
-                                rows={5}
-                                maxLength={DESCRIPTION_MAX_LENGTH}
-                                value={data.initiative_description}
-                                onChange={(e) =>
-                                    setData(
-                                        'initiative_description',
-                                        e.target.value,
-                                    )
-                                }
-                                placeholder="Briefly describe what the initiative does and its impact"
-                            />
-                            <p className="text-right text-xs text-muted-foreground">
-                                {data.initiative_description.length}/
-                                {DESCRIPTION_MAX_LENGTH}
-                            </p>
-                        </div>
-
-                        {selectedCategory?.paper_template_url && (
-                            <Button variant="outline" asChild>
-                                <a
-                                    href={selectedCategory.paper_template_url}
-                                    download
-                                >
-                                    <Download />
-                                    Download submission paper template
-                                </a>
-                            </Button>
-                        )}
-                    </div>
+                    <InitiativeFields
+                        categories={categories}
+                        data={data}
+                        errors={errors}
+                        setData={setData}
+                    />
                 )}
 
                 {currentStep.key === 'terms' && (
-                    <div className="grid gap-4">
-                        <div className="grid gap-1">
-                            <h2 className="font-display text-base font-semibold">
-                                Terms &amp; Conditions —{' '}
-                                {APPLICANT_TYPE_LABELS[applicantType]}
-                            </h2>
-                            {selectedCategory && (
-                                <p className="text-sm text-muted-foreground">
-                                    {selectedCategory.name}
-                                </p>
-                            )}
-                        </div>
-
-                        <ol className="max-h-72 list-decimal space-y-2 overflow-y-auto rounded-lg border bg-surface p-4 pl-9 text-sm text-ink dark:bg-muted dark:text-foreground">
-                            {termPoints.map((point, index) => (
-                                <li key={index}>{point}</li>
-                            ))}
-                        </ol>
-
-                        <div className="grid gap-2">
-                            <div className="flex items-start gap-3">
-                                <Checkbox
-                                    id="terms_accepted"
-                                    aria-invalid={Boolean(
-                                        errors.terms_accepted,
-                                    )}
-                                    checked={data.terms_accepted}
-                                    onCheckedChange={(checked) =>
-                                        setData(
-                                            'terms_accepted',
-                                            checked === true,
-                                        )
-                                    }
-                                />
-                                <Label
-                                    htmlFor="terms_accepted"
-                                    className="leading-snug font-normal"
-                                >
-                                    I have read and agree to the terms and
-                                    conditions of ICS Award 2026.
-                                </Label>
-                            </div>
-                        </div>
-                    </div>
+                    <TermsFields
+                        category={selectedCategory}
+                        terms={terms}
+                        accepted={data.terms_accepted}
+                        invalid={Boolean(errors.terms_accepted)}
+                        onAcceptedChange={(accepted) =>
+                            setData('terms_accepted', accepted)
+                        }
+                    />
                 )}
 
                 <div className="flex items-center gap-3">

@@ -525,7 +525,7 @@ function FinalistPanel({
     );
 }
 
-function VerificationPanel({
+export function VerificationPanel({
     submission,
     contactEmail,
 }: {

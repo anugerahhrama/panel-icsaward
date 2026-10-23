@@ -21,6 +21,9 @@ test('profile information can be updated', function () {
         ->patch(route('profile.update'), [
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'phone' => '+62 812-3456-7890',
+            'position' => 'Sustainability Manager',
+            'company_name' => 'PT Example Indonesia',
         ]);
 
     $response
@@ -32,6 +35,11 @@ test('profile information can be updated', function () {
     expect($user->name)->toBe('Test User');
     expect($user->email)->toBe('test@example.com');
     expect($user->email_verified_at)->toBeNull();
+    expect($user->only(['phone', 'position', 'company_name']))->toBe([
+        'phone' => '+62 812-3456-7890',
+        'position' => 'Sustainability Manager',
+        'company_name' => 'PT Example Indonesia',
+    ]);
 });
 
 test('email verification status is unchanged when the email address is unchanged', function () {
@@ -42,6 +50,7 @@ test('email verification status is unchanged when the email address is unchanged
         ->patch(route('profile.update'), [
             'name' => 'Test User',
             'email' => $user->email,
+            ...$user->only(['phone', 'position', 'company_name']),
         ]);
 
     $response
@@ -50,6 +59,39 @@ test('email verification status is unchanged when the email address is unchanged
 
     expect($user->refresh()->email_verified_at)->not->toBeNull();
 });
+
+test('participants must keep valid contact details', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => 'call me',
+        ])
+        ->assertSessionHasErrors([
+            'phone' => 'Please enter a valid phone number.',
+            'position',
+            'company_name',
+        ]);
+});
+
+test('staff update their name and email without contact details', function (string $role) {
+    $user = User::factory()->{$role}()->create();
+
+    $this->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => 'Committee Member',
+            'email' => $user->email,
+            'phone' => '+62 811-0000-0000',
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('profile.edit'));
+
+    expect($user->fresh())
+        ->name->toBe('Committee Member')
+        ->phone->toBe($user->phone);
+})->with(['admin', 'judge']);
 
 test('user can delete their account', function () {
     $user = User::factory()->create();

@@ -22,6 +22,42 @@ trait ProfileValidationRules
     }
 
     /**
+     * Get the validation rules for the contact details only participants have.
+     *
+     * @return array<string, array<int, string>>
+     */
+    protected function participantProfileRules(): array
+    {
+        return [
+            'phone' => $this->phoneRules(),
+            'position' => ['required', 'string', 'max:255'],
+            'company_name' => ['required', 'string', 'max:255'],
+        ];
+    }
+
+    /**
+     * Get the validation rules for the participant's phone number.
+     *
+     * @return array<int, string>
+     */
+    protected function phoneRules(): array
+    {
+        return ['required', 'string', 'max:30', 'regex:/^\+?[0-9\s\-()]{6,}$/'];
+    }
+
+    /**
+     * Get the custom validation messages for the participant's contact details.
+     *
+     * @return array<string, string>
+     */
+    protected function participantProfileMessages(): array
+    {
+        return [
+            'phone.regex' => 'Please enter a valid phone number.',
+        ];
+    }
+
+    /**
      * Get the validation rules used to validate user names.
      *
      * @return array<int, ValidationRule|array<mixed>|string>

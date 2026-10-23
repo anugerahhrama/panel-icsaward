@@ -23,6 +23,7 @@ export default function Profile({
     status?: string;
 }) {
     const { auth } = usePage<PageProps>().props;
+    const isParticipant = auth.user.role === 'participant';
 
     return (
         <>
@@ -34,7 +35,11 @@ export default function Profile({
                 <Heading
                     variant="small"
                     title="Profile"
-                    description="Update your name and email address"
+                    description={
+                        isParticipant
+                            ? 'Update your name, email address, and contact details'
+                            : 'Update your name and email address'
+                    }
                 />
 
                 <Form
@@ -109,6 +114,78 @@ export default function Profile({
                                         )}
                                     </div>
                                 )}
+
+                            {isParticipant && (
+                                <>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="phone">
+                                            Phone number
+                                        </Label>
+
+                                        <Input
+                                            id="phone"
+                                            type="tel"
+                                            className="mt-1 block w-full"
+                                            defaultValue={auth.user.phone ?? ''}
+                                            name="phone"
+                                            required
+                                            autoComplete="tel"
+                                            placeholder="+62 812-3456-7890"
+                                        />
+
+                                        <InputError
+                                            className="mt-2"
+                                            message={errors.phone}
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="position">
+                                            Position
+                                        </Label>
+
+                                        <Input
+                                            id="position"
+                                            className="mt-1 block w-full"
+                                            defaultValue={
+                                                auth.user.position ?? ''
+                                            }
+                                            name="position"
+                                            required
+                                            autoComplete="organization-title"
+                                            placeholder="e.g. Sustainability Manager"
+                                        />
+
+                                        <InputError
+                                            className="mt-2"
+                                            message={errors.position}
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="company_name">
+                                            Company name
+                                        </Label>
+
+                                        <Input
+                                            id="company_name"
+                                            className="mt-1 block w-full"
+                                            defaultValue={
+                                                auth.user.company_name ?? ''
+                                            }
+                                            name="company_name"
+                                            required
+                                            autoComplete="organization"
+                                            placeholder="PT Example Indonesia"
+                                        />
+
+                                        <InputError
+                                            className="mt-2"
+                                            message={errors.company_name}
+                                        />
+                                    </div>
+                                </>
+                            )}
 
                             <div className="flex items-center gap-4">
                                 <Button

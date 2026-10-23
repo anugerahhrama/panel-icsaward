@@ -7,6 +7,7 @@ use App\Http\Controllers\SharedSubmissionFileController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\SubmissionFileController;
 use App\Http\Controllers\SubmissionPaperController;
+use App\Http\Controllers\SubmissionRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login')->name('home');
@@ -28,6 +29,16 @@ Route::get('submissions/{submission}/files/{file}/shared', SharedSubmissionFileC
     ->middleware(['signed:relative', 'throttle:60,1'])
     ->whereIn('file', ['paper', 'statement'])
     ->name('submissions.files.shared');
+
+Route::middleware(['auth', 'verified', 'role:participant'])->group(function () {
+    Route::get('submissions/create', [SubmissionRegistrationController::class, 'create'])->name('submissions.create');
+    Route::post('submissions/validate', [SubmissionRegistrationController::class, 'validateInitiative'])
+        ->middleware('throttle:30,1')
+        ->name('submissions.validate');
+    Route::post('submissions', [SubmissionRegistrationController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('submissions.store');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('submissions/{submission}', [SubmissionController::class, 'show'])->name('submissions.show');
