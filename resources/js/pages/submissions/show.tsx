@@ -1,11 +1,20 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { CircleAlert, CircleCheck, Clock, Download } from 'lucide-react';
+import {
+    CircleAlert,
+    CircleCheck,
+    CircleX,
+    Clock,
+    Download,
+} from 'lucide-react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { LogoUploadField } from '@/components/admin/logo-upload-field';
 import { LockedFile } from '@/components/submissions/locked-file';
-import { STATUS_LABELS } from '@/components/submissions/submission-status-card';
-import type { SubmissionStatus } from '@/components/submissions/submission-status-card';
+import {
+    STATUS_LABELS,
+    VerificationPanel,
+} from '@/components/submissions/submission-status-card';
+import type { DashboardSubmission } from '@/components/submissions/submission-status-card';
 import { WhatsNext } from '@/components/submissions/whats-next';
 import type { TimelineStage } from '@/components/submissions/whats-next';
 import { Badge } from '@/components/ui/badge';
@@ -18,21 +27,7 @@ import { dashboard } from '@/routes';
 import { store } from '@/routes/submissions/paper';
 
 type Props = {
-    submission: {
-        uuid: string;
-        initiativeTitle: string;
-        category: string;
-        paperTemplateUrl: string | null;
-        status: SubmissionStatus;
-        paperUploadedAt: string | null;
-        paperOriginalName: string | null;
-        paperUrl: string | null;
-        statementOriginalName: string | null;
-        statementUrl: string | null;
-        revisionNote: string | null;
-        revisionDeadline: string | null;
-        isRevisionOpen: boolean;
-    };
+    submission: DashboardSubmission;
     requirements: {
         paperExtensions: string[];
         statementLetterExtensions: string[];
@@ -90,6 +85,44 @@ function ContactLine({ contactEmail }: { contactEmail: string | null }) {
     );
 }
 
+function SubmittedHeader({ submission }: { submission: Props['submission'] }) {
+    if (submission.status === 'needs_revision') {
+        return (
+            <>
+                <Clock className="size-10 text-muted-foreground" />
+                <h2 className="font-display text-lg font-bold">
+                    Revision closed
+                </h2>
+            </>
+        );
+    }
+
+    if (submission.status === 'disqualified') {
+        return (
+            <>
+                <CircleX className="size-10 text-destructive" />
+                <h2 className="font-display text-lg font-bold">
+                    Your paper has been submitted
+                </h2>
+            </>
+        );
+    }
+
+    return (
+        <>
+            <CircleCheck className="size-10 text-brand" />
+            <h2 className="font-display text-lg font-bold">
+                Your paper has been submitted
+            </h2>
+            {submission.status === 'under_review' && (
+                <p className="text-sm text-balance text-muted-foreground">
+                    Your files are locked while the committee reviews them.
+                </p>
+            )}
+        </>
+    );
+}
+
 function SubmittedState({
     submission,
     contactEmail,
@@ -99,38 +132,27 @@ function SubmittedState({
     contactEmail: string | null;
     timeline: TimelineStage[];
 }) {
-    const isRevisionClosed = submission.status === 'needs_revision';
-
     return (
         <div className="flex flex-col gap-6">
             <div className="flex flex-col items-center gap-2 text-center">
-                {isRevisionClosed ? (
-                    <Clock className="size-10 text-muted-foreground" />
-                ) : (
-                    <CircleCheck className="size-10 text-brand" />
-                )}
-                <h2 className="font-display text-lg font-bold">
-                    {isRevisionClosed
-                        ? 'Revision closed'
-                        : 'Your paper has been submitted'}
-                </h2>
-                <p className="text-sm text-balance text-muted-foreground">
-                    {isRevisionClosed ? (
-                        <>
-                            The revision deadline has passed, so uploads are no
-                            longer accepted.
-                            <ContactLine contactEmail={contactEmail} />
-                        </>
-                    ) : (
-                        'Your files are locked while the committee reviews them.'
-                    )}
-                </p>
-                <Badge variant="secondary">
+                <SubmittedHeader submission={submission} />
+                <Badge
+                    variant={
+                        submission.status === 'disqualified'
+                            ? 'destructive'
+                            : 'secondary'
+                    }
+                >
                     {STATUS_LABELS[submission.status]}
                 </Badge>
             </div>
 
             <SubmissionSummary submission={submission} />
+
+            <VerificationPanel
+                submission={submission}
+                contactEmail={contactEmail}
+            />
 
             <div className="grid gap-2">
                 {submission.paperOriginalName && (

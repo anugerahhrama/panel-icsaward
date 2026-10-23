@@ -71,19 +71,17 @@ Status: ✅ selesai · 🚧 berjalan · ⬜ belum
 - ✅ Narasi "What's next" bisa diedit panitia (disisipkan 2026-10-06)
 - ✅ Revisi 2026-10-13: logo footer auth tanpa label, ubah Decision verifikasi, hapus registrasi (superadmin)
 - ✅ Sign up with Google (disisipkan 2026-10-13, menggantikan keputusan "Google hanya untuk akun yang sudah ada")
+- ✅ Register another initiative untuk peserta yang sudah login (disisipkan 2026-10-22)
+- ✅ Celah tampilan peserta: kontak di Settings → Profile + halaman submission mengikuti status (disisipkan 2026-10-22)
 
-### 🚧 Next up: Deploy produksi + QA staging
+### 🚧 Next up: belum ditentukan
 
-Jalankan **Checklist deploy produksi** di bawah, lalu uji yang butuh staging:
-
-- Login & Sign up Google dengan kredensial asli (lihat Backlog "Uji manual Login & Sign up via Google").
-- Office Online viewer PPTX/DOCX.
-- Upload PPTX asli, baik paper peserta maupun template paper admin.
-
-Bug yang ditemukan → Backlog/Known issues.
+Pilih satu fitur dari Backlog saat `/kickoff` (keputusan user 2026-10-22: "Deploy produksi + QA staging" dihapus dari Next up; Checklist deploy produksi tetap sebagai referensi).
 
 ## Backlog
 
+- **Cek browser fitur 2026-10-22** — Settings → Profile (peserta vs admin), `submissions/{uuid}` untuk submission disqualified / finalis berjadwal / pemenang; belum diuji manual
+- **Deskripsi layout halaman submission statis** — `ShowSubmission.layout.description` selalu "Upload your paper before the deadline to complete your entry.", juga setelah paper terkunci / diputuskan (di luar scope sesi Celah tampilan peserta, 2026-10-22)
 - **Pesan "Scores updated." untuk juri** — QA 2026-10-01: tombol "Update scores" tetap memunculkan toast "Scores submitted." (`Judge\ScoreController` memakai satu pesan untuk submit & update)
 - **Toast menutupi tombol Save di Sheet** — QA 2026-10-01: toast admin bawah-kanan sempat menutupi "Save changes" di Sheet Admin Accounts tepat setelah create (hilang sendiri; kosmetik)
 
@@ -103,8 +101,6 @@ Bug yang ditemukan → Backlog/Known issues.
 - **Pertimbangan teknis** — strategi tabel admin (server vs client-side) & race condition/konkurensi: lihat bagian "Backlog — Pertimbangan Teknis" di `ASSESSMENT-BRIEF.md`, kerjakan bersama fitur terkait
 
 - **Buat template baru inline di form kategori** (brief: tabel dinamis di Sheet kategori) — sesi Assessment Templates hanya menyediakan dropdown pilih template + link ke halaman Assessment Templates
-- **"Register another initiative" untuk user login** — fitur sendiri: UI Initiative → Terms bagi peserta yang sudah punya akun + tombol di dashboard/empty state (hanya relevan bila `max_registrations_per_user` > 1); aturan limit/duplikat sudah ada di `RegisterSubmission`
-- **Dashboard peserta — `WhatsNext` di halaman sukses upload** — belum menerima `timeline` dari Setting (panel per status, undangan Awarding Night, dan award sudah ada sejak fitur Pengumuman)
 - **Assign juri dari form kategori** (brief: "Assign juri di form yang sama") — sesi Judges hanya menyediakan penugasan + recusal dari halaman Judges (keputusan user 2026-09-30)
 - **Lepas / hapus akun login juri** — form Judges menolak `has_account=false` untuk juri yang sudah punya akun; akun hanya ikut terhapus saat juri dihapus
 - **T&C & template asli** — isi final dari tim lewat Admin → Settings → Files & Terms (UI sudah ada; nilai masih placeholder / file belum diunggah); template paper tiap kategori (20) diunggah lewat form Categories
@@ -196,3 +192,5 @@ Urutan untuk server produksi (DB baru maupun DB lama yang di-upgrade). Semua per
 | 2026-10-06 | Narasi "What's next" bisa diedit          | Enum `TimelineStage` (key setting `timeline_<tahap>` + `_title`/`_description`, teks default, `forParticipants()`/`forSettingsForm()`) menggantikan `DashboardController::TIMELINE` & `TIMELINE_KEYS`; field Title/Date/Description per tahap di Settings → Registration & Deadlines (kosong → default, tanpa migrasi/seeder); halaman sukses `submissions/show` kini memakai timeline yang sama (5 tahap, sebelumnya 4 hardcode di frontend); `ci:check` hijau (450 test)                                                                                                                                                                                                                                                                                |
 | 2026-10-13 | Revisi logo · decision · hapus registrasi | Footer auth tanpa label "Organized by"/"Knowledge Partner" (logo ICSA atas tetap lockup); `VerifySubmission` menerima status `under_review` + `verificationDecisions()` (`decidableStatuses()`), update kondisional pada status saat dimuat + `whereDoesntHave('judgeScores')`, email dikirim ulang; Verification sheet: tombol "Change decision" (prop row `can_change_decision`); `DeleteRegistration` + route `admin.participants.registrations.destroy` (`role:superadmin`) = hard delete submission + file, akun peserta di-`forceDelete` bila tak ada registrasi lain (keputusan user: hard delete agar email bisa daftar ulang), ditolak bila sudah ada skor juri; `ci:check` hijau (455 test)                                                     |
 | 2026-10-13 | Sign up with Google                       | Callback Google bersama login/sign up: peserta terdaftar login, email baru masuk session `google_signup` → wizard (gate registrasi tetap; admin/juri termasuk yang terhapus ditolak). `RegistrationValidationRules::accountRules()` mode Google tanpa password + email dikunci `Rule::in`. `CreateNewUser` memberi password acak + `email_verified_at` dan mengantrekan `SubmissionConfirmation` eksplisit. Route `auth.google.signup.cancel` ("Use email instead"), prop `googleSignup`, komponen `GoogleButton` dipakai login & register. `ci:check` hijau (462 test).                                                                                                                                                                                  |
+| 2026-10-22 | Register another initiative               | `submissions/create` (AuthLayout, stepper Initiative → Terms) untuk peserta login, tombol di dashboard bila `RegisterSubmission::canRegisterAnother()` (registrasi buka + di bawah `max_registrations_per_user`), kategori terdaftar tampil disabled, `RegisterInitiativeRequest` (gate registrasi di `prepareForValidation`, unique kategori per user, step `submissions.validate`), submit → `SendSubmissionConfirmation` + redirect `submissions.show`; field Initiative/Terms dipecah ke `components/submissions/` dan dipakai Sign Up, data kategori/T&C di `RegistrationFormData`; format `.ai/rules/app.md` diperbaiki; 2 gap admin→peserta dicatat di Backlog; belum dicek di browser; `ci:check` hijau (477 test)                                |
+| 2026-10-22 | Celah tampilan peserta                    | Settings → Profile: peserta mengedit phone/position/company_name (`participantProfileRules()` + `phoneRules()` dipindah ke `ProfileValidationRules`, dipakai Sign Up & `ProfileUpdateRequest` khusus role participant; admin/juri tidak terpengaruh). Payload submission peserta = `ParticipantSubmissionData` (`collection()` dashboard, `one()` show; `RELATIONS`), `isAnnouncedFinalist`/`pitching` pindah dari `DashboardController`. `submissions/show` setelah terkunci merender `VerificationPanel` (diekspor dari `submission-status-card`) + header per status. `ci:check` hijau (482 test)                                                                                                                                                      |

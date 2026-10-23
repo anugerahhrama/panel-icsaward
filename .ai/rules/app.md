@@ -153,16 +153,16 @@ Keputusan user: passkey (bawaan starter kit Fortify) tidak dipakai. `Features::p
 `Auth\GoogleLoginController` (Socialite, route `auth.google.*` di group `guest`) memakai satu callback untuk login dan sign up. Email wajib `email_verified` dari Google.
 
 - **Email sudah ada** (dicari `withTrashed`):
-  - role `participant` → login. `email_verified_at` yang kosong diisi, dan 2FA sengaja dilewati.
-  - role lain (termasuk admin yang terhapus) → ditolak dengan pesan yang sama, tanpa menyebut perannya.
+    - role `participant` → login. `email_verified_at` yang kosong diisi, dan 2FA sengaja dilewati.
+    - role lain (termasuk admin yang terhapus) → ditolak dengan pesan yang sama, tanpa menyebut perannya.
 - **Email baru:**
-  - Gate `RegistrationStatus::current()` dicek dulu.
-  - Lolos gate → profil disimpan di session `GoogleLoginController::SIGNUP_SESSION_KEY` (`google_signup`), lalu redirect ke wizard `register`.
-  - Google tidak pernah membuat akun langsung.
+    - Gate `RegistrationStatus::current()` dicek dulu.
+    - Lolos gate → profil disimpan di session `GoogleLoginController::SIGNUP_SESSION_KEY` (`google_signup`), lalu redirect ke wizard `register`.
+    - Google tidak pernah membuat akun langsung.
 - **Session `google_signup` aktif:**
-  - `RegistrationValidationRules::accountRules()` membuang `password` dan mengunci email dengan `Rule::in([emailGoogle])`. Berlaku untuk step validation dan `CreateNewUser`.
-  - `CreateNewUser` memberi password acak (`Str::password`) dan `email_verified_at`, lalu menghapus session.
-  - `SubmissionConfirmation` diantrekan eksplisit, karena listener `Registered` bawaan melewati user yang sudah verified. Jangan dihapus, nanti link submission tidak terkirim.
+    - `RegistrationValidationRules::accountRules()` membuang `password` dan mengunci email dengan `Rule::in([emailGoogle])`. Berlaku untuk step validation dan `CreateNewUser`.
+    - `CreateNewUser` memberi password acak (`Str::password`) dan `email_verified_at`, lalu menghapus session.
+    - `SubmissionConfirmation` diantrekan eksplisit, karena listener `Registered` bawaan melewati user yang sudah verified. Jangan dihapus, nanti link submission tidak terkirim.
 - Penolakan = `to_route('login')->withErrors(['google' => …])`, dibaca halaman login lewat `usePage().props.errors`.
 
 Test memakai `Socialite::fake('google', $user)`, dan sign up diuji dengan `withSession(['google_signup' => …])`. (Login via Google 2026-09-30, Sign up with Google 2026-10-13.)
@@ -234,3 +234,15 @@ Keputusan user: konfirmasi finalis/award tetap internal. Peserta baru melihat ha
 ## Link submission peserta = khusus superadmin, lewat field row `submission_url`
 
 Keputusan user: superadmin bisa menyalin link pribadi peserta (`route('submissions.show', $submission)`) dari Participants → Registrations → View, untuk dikirim manual bila email konfirmasi tidak sampai. Berlaku juga di produksi (tanpa flag env). `RegistrationController::index` mengisi `submission_url` hanya bila `role === Superadmin`; admin menerima `null` dari server, bukan sekadar disembunyikan di UI, karena membuka link menandai email peserta terverifikasi (§ Verifikasi email peserta). Jangan masukkan link ke export atau ke tabel Paper Submissions tanpa cek peran yang sama. Reference: `tests/Feature/Admin/ParticipantsTest.php`. (Detail peserta, 2026-10-01.)
+
+## Registrasi inisiatif tambahan = `SubmissionRegistrationController`, boleh/tidaknya = `RegisterSubmission::canRegisterAnother()`
+
+Peserta yang sudah login mendaftarkan inisiatif berikutnya lewat `submissions.create`/`validate`/`store` (`role:participant`, `verified`). `RegisterInitiativeRequest` memanggil `ensureRegistrationIsOpen()` di `prepareForValidation`, menambah unique kategori per user, dan memvalidasi Terms hanya di `store`. Tombol dashboard dan guard halaman memakai `RegisterSubmission::canRegisterAnother()` (registrasi buka + di bawah `maxRegistrations()`); jangan menghitung limit manual. Limit dan duplikat tetap dikunci di `RegisterSubmission::handle()`. Data kategori dan T&C untuk Sign Up dan form ini diambil dari `RegistrationFormData`. Store mengirim `SendSubmissionConfirmation` eksplisit, karena tiap submission butuh email berisi link-nya sendiri. (Register another initiative, 2026-10-22.)
+
+## Data submission untuk peserta = `ParticipantSubmissionData`, dipakai dashboard & halaman submission
+
+Dashboard (`collection()`, eager load `ParticipantSubmissionData::RELATIONS`) dan `submissions/show` (`one()`) mengirim bentuk yang sama (`DashboardSubmission` di frontend): status `statusForParticipant()`, alasan diskualifikasi, pitching, undangan Awarding Night, award, `notSelected`. Field status peserta baru ditambahkan di class ini, bukan di controller, supaya link email (halaman show) dan dashboard tidak berbeda lagi. (Celah tampilan peserta, 2026-10-22.)
+
+## Kontak peserta = `participantProfileRules()`, wajib hanya untuk role participant
+
+`phone`/`position`/`company_name` divalidasi lewat `ProfileValidationRules::participantProfileRules()` (+ `phoneRules()`, `participantProfileMessages()`), dipakai Sign Up (`RegistrationValidationRules::accountRules()`) dan Settings → Profile (`ProfileUpdateRequest`, hanya bila role participant). Admin/juri tidak punya field ini di Profile; nilai yang tetap dikirim diabaikan karena controller mengisi dari `validated()`. (Celah tampilan peserta, 2026-10-22.)

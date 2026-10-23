@@ -2,6 +2,7 @@
 
 namespace App\Actions\Submissions;
 
+use App\Enums\RegistrationStatus;
 use App\Models\AwardCategory;
 use App\Models\Setting;
 use App\Models\Submission;
@@ -33,14 +34,9 @@ class RegisterSubmission
                 ]);
             }
 
-            $maxRegistrations = max(1, (int) Setting::get('max_registrations_per_user', '1'));
-
-            if ($user->submissions()->count() >= $maxRegistrations) {
+            if ($user->submissions()->count() >= self::maxRegistrations()) {
                 throw ValidationException::withMessages([
-                    'award_category_id' => trans_choice(
-                        'You can register at most :count initiative.|You can register at most :count initiatives.',
-                        $maxRegistrations,
-                    ),
+                    'award_category_id' => self::limitMessage(),
                 ]);
             }
 
@@ -51,5 +47,33 @@ class RegisterSubmission
                 'terms_accepted_at' => now(),
             ]);
         });
+    }
+
+    /**
+     * Whether the user may register another initiative right now: registration is open and they are below the limit.
+     */
+    public static function canRegisterAnother(User $user): bool
+    {
+        return RegistrationStatus::current()->isOpen()
+            && $user->submissions()->count() < self::maxRegistrations();
+    }
+
+    /**
+     * Get the number of initiatives a single account may register.
+     */
+    public static function maxRegistrations(): int
+    {
+        return max(1, (int) Setting::get('max_registrations_per_user', '1'));
+    }
+
+    /**
+     * Get the message shown when the user has reached the registration limit.
+     */
+    public static function limitMessage(): string
+    {
+        return trans_choice(
+            'You can register at most :count initiative.|You can register at most :count initiatives.',
+            self::maxRegistrations(),
+        );
     }
 }

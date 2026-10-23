@@ -211,3 +211,18 @@ test('finalists see the Awarding Night invitation, and their award only once the
         ->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page->where('submissions.0.award', 'bronze'));
 });
+
+test('participants can register another initiative only while registration is open and below the limit', function (array $settings, bool $expected) {
+    foreach ($settings as $key => $value) {
+        Setting::put($key, $value);
+    }
+    $submission = Submission::factory()->create();
+
+    $this->actingAs($submission->user)
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('canRegisterAnother', $expected));
+})->with([
+    'below the limit' => [['max_registrations_per_user' => '2'], true],
+    'limit reached' => [['max_registrations_per_user' => '1'], false],
+    'registration closed' => [['max_registrations_per_user' => '2', 'is_registration_open' => '0'], false],
+]);

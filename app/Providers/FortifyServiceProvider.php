@@ -4,10 +4,9 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
-use App\Enums\ApplicantType;
+use App\Actions\Submissions\RegistrationFormData;
 use App\Enums\RegistrationStatus;
 use App\Http\Controllers\Auth\GoogleLoginController;
-use App\Models\AwardCategory;
 use App\Models\Setting;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -86,23 +85,13 @@ class FortifyServiceProvider extends ServiceProvider
                 ]);
             }
 
-            $defaultPaperTemplateUrl = Setting::publicFileUrl('submission_template_path');
+            $formData = app(RegistrationFormData::class);
 
             return Inertia::render('auth/register', [
                 'passwordRules' => Password::defaults()->toPasswordRulesString(),
                 'googleSignup' => $request->session()->get(GoogleLoginController::SIGNUP_SESSION_KEY),
-                'categories' => AwardCategory::query()
-                    ->orderBy('sort_order')
-                    ->orderBy('name')
-                    ->get(['id', 'name', 'description', 'applicant_type', 'paper_template_path'])
-                    ->map(fn (AwardCategory $category): array => [
-                        ...$category->only(['id', 'name', 'description', 'applicant_type']),
-                        'paper_template_url' => $category->paper_template_url ?? $defaultPaperTemplateUrl,
-                    ]),
-                'terms' => [
-                    ApplicantType::Organization->value => Setting::get('terms_organization', ''),
-                    ApplicantType::Individual->value => Setting::get('terms_individual', ''),
-                ],
+                'categories' => $formData->categories(),
+                'terms' => $formData->terms(),
             ]);
         });
 

@@ -1,6 +1,10 @@
 <?php
 
+use App\Enums\Award;
+use App\Enums\SubmissionStatus;
 use App\Models\AwardCategory;
+use App\Models\PitchingSession;
+use App\Models\PitchingSlot;
 use App\Models\Setting;
 use App\Models\Submission;
 use App\Models\User;
@@ -103,4 +107,40 @@ test('the upload page offers the category paper template before the default one'
     $this->actingAs($submission->user)
         ->get(route('submissions.show', $submission))
         ->assertInertia(fn (Assert $page) => $page->where('submission.paperTemplateUrl', Storage::disk('public')->url('settings/default.pdf')));
+});
+
+test('the submission page shows the committee decision the dashboard shows', function () {
+    $disqualified = Submission::factory()->paperSubmitted()->create([
+        'status' => SubmissionStatus::Disqualified,
+        'disqualified_reason' => 'The statement letter is missing a duty stamp.',
+    ]);
+
+    $this->actingAs($disqualified->user)
+        ->get(route('submissions.show', $disqualified))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('submission.status', 'disqualified')
+            ->where('submission.disqualifiedReason', 'The statement letter is missing a duty stamp.'));
+
+    $category = AwardCategory::factory()->finalistsAnnounced()->create();
+    $notSelected = Submission::factory()->qualified()->for($category, 'awardCategory')->create();
+
+    $this->actingAs($notSelected->user)
+        ->get(route('submissions.show', $notSelected))
+        ->assertInertia(fn (Assert $page) => $page->where('submission.notSelected', true));
+});
+
+test('the submission page shows the finalist pitching schedule, invitation and award once announced', function () {
+    Setting::put('timeline_awarding_night', '20 November 2026 · Mason Pine Hotel');
+    $category = AwardCategory::factory()->winnersAnnounced()->create();
+    $submission = Submission::factory()->finalist()->for($category, 'awardCategory')->create(['award' => Award::Gold]);
+    $session = PitchingSession::factory()->for($category, 'awardCategory')->create(['scheduled_at' => '2026-11-06 02:00:00']);
+    PitchingSlot::factory()->for($session)->for($submission)->create(['starts_at' => '2026-11-06 02:20:00']);
+
+    $this->actingAs($submission->user)
+        ->get(route('submissions.show', $submission))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('submission.status', 'finalist')
+            ->where('submission.pitching.startsAt', '2026-11-06T02:20:00+00:00')
+            ->where('submission.awardingNight', ['details' => '20 November 2026 · Mason Pine Hotel'])
+            ->where('submission.award', 'gold'));
 });
